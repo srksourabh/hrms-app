@@ -39,27 +39,12 @@ export default function LoginPage() {
   async function handleDemoLogin() {
     setEmail("admin@demo.com");
     setPassword("Demo@1234");
-    setLoading(true);
-    setError("");
-    try {
-      const result = await signIn("credentials", {
-        email: "admin@demo.com",
-        password: "Demo@1234",
-        redirect: false,
-      });
-      if (result?.error) {
-        setError("Demo login failed. Try again.");
-        setLoading(false);
-        return;
-      }
-      if (result?.ok) {
-        router.push("/");
-        router.refresh();
-      }
-    } catch {
-      setError("Something went wrong. Try again.");
-      setLoading(false);
-    }
+    await signIn("credentials", {
+      email: "admin@demo.com",
+      password: "Demo@1234",
+      redirect: true,
+      callbackUrl: "/",
+    });
   }
 
   return (
