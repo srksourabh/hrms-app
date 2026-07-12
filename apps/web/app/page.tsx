@@ -1,9 +1,6 @@
-"use client";
-
 import Link from "next/link";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { redirect } from "next/navigation";
+import { auth } from "@hrms-app/auth";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -34,27 +31,10 @@ const featuredSlugs = [
   "performance-goals",
 ];
 
-export default function RootPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+export default async function RootPage() {
+  const session = await auth();
 
-  useEffect(() => {
-    if (status === "unauthenticated") router.replace("/login");
-  }, [status, router]);
-
-  if (status === "loading") {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#071b14] text-white">
-        <div className="text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-lg font-bold text-emerald-950">U</div>
-          <div className="mx-auto mt-5 h-1 w-24 overflow-hidden rounded-full bg-white/10"><div className="h-full w-1/2 animate-pulse rounded-full bg-amber-300" /></div>
-          <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/45">Preparing your workspace</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!session?.user) return null;
+  if (!session?.user) redirect("/login");
 
   return (
     <DashboardShell user={session.user} regulatoryContext={session.user.regulatoryContext ?? "saudi"} preferredLanguage={session.user.preferredLanguage ?? "en"}>
