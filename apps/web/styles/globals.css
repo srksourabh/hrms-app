@@ -1,36 +1,237 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+/* UDS-HR Design System — Saudi-luxury theme
+ *
+ * Visual language draws on:
+ *   - Saudi flag green (#006C35) and its desaturated, luxurious variants
+ *   - Sand/clay tones from the Arabian desert
+ *   - Gold accent from traditional architecture (Masmak, Kingdom Tower)
+ *   - Deep midnight blue (night sky over the Empty Quarter)
+ *   - Hibiscus red (the Saudi national flower and city gates)
+ *
+ * Typography pair:
+ *   - Cairo: Arabic-first geometric sans (Saudi government + most banks)
+ *   - Inter: Latin body text, designed to harmonize with Cairo's x-height
+ *   - Amiri: Arabic display/headings (serif, lends a ceremonial feel)
+ *
+ * RTL: every component is RTL-first; dir="rtl" on <html> flips
+ * physical properties (margin-inline-start, padding-inline-end) so
+ * layouts mirror automatically.
+ *
+ * The system is built on Tailwind v4's CSS-first config; tokens below
+ * are HSL components consumed by `hsl(var(--token) / <alpha>)`.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=Amiri:wght@400;700&display=swap");
+
 @import "tailwindcss";
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 220 14% 15%;
-    --card: 35 38% 92%;
-    --card-foreground: 220 14% 15%;
+    /* === Saudi flag & national palette === */
+    --saudi-green: 149 100% 21%;        /* #006C35 — primary national green */
+    --saudi-green-dark: 154 100% 14%;   /* #00401F — deep forest, used for headers */
+    --saudi-green-light: 152 65% 38%;   /* #1F8B5A — soft sage, hover states */
+    --saudi-gold: 42 90% 50%;           /* #F4B400 — heraldic gold, Kingdom Tower */
+    --saudi-gold-soft: 38 75% 65%;      /* #DDB568 — aged brass */
+    --saudi-rose: 350 70% 45%;          /* #C8233E — hibiscus, city gates */
+    --saudi-night: 215 60% 12%;         /* #0A1A33 — night over the dunes */
+    --saudi-sand: 35 38% 92%;           /* #F1E8DA — desert dawn */
+    --saudi-sand-dark: 32 30% 75%;      /* #D8C2A1 — dry sand */
+    --saudi-clay: 25 35% 55%;           /* #B48865 — desert clay, Najdi architecture */
+    --saudi-mist: 200 30% 96%;          /* #F4F7F9 — cool oasis */
+    --saudi-dune: 38 45% 82%;           /* #ECD9B6 — sunlit dune */
+    --saudi-stone: 30 15% 60%;          /* #9A8E80 — limestone */
+    --saudi-honor: 0 0% 100%;           /* #FFFFFF — pure white for text on color */
+    --saudi-shadow: 220 30% 20%;        /* #1F2937 — text on light bg */
+
+    /* === Semantic tokens (consumed by Tailwind) === */
+    --background: 35 38% 97%;
+    --foreground: 220 30% 20%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 30% 20%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 14% 15%;
-    --primary: 149 100% 21%;
+    --popover-foreground: 220 30% 20%;
+    --primary: var(--saudi-green);
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 20% 96%;
-    --secondary-foreground: 220 14% 15%;
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 14% 45%;
-    --accent: 42 100% 50%;
-    --accent-foreground: 220 14% 15%;
-    --destructive: 0 84.2% 60.2%;
+    --secondary: 35 38% 92%;
+    --secondary-foreground: 220 30% 20%;
+    --muted: 200 30% 94%;
+    --muted-foreground: 215 14% 40%;
+    --accent: var(--saudi-gold);
+    --accent-foreground: 220 30% 20%;
+    --destructive: var(--saudi-rose);
     --destructive-foreground: 0 0% 100%;
-    --border: 214 20% 90%;
-    --input: 214 20% 90%;
-    --ring: 149 60% 35%;
-    --radius: 0.75rem;
+    --border: 35 25% 88%;
+    --input: 35 25% 88%;
+    --ring: var(--saudi-green);
+    --radius: 0.875rem;
+
+    /* === Hero scene tokens (used by <SaudiBackdrop>) === */
+    --hero-sky-top: 215 60% 12%;        /* deep night at top */
+    --hero-sky-mid: 25 60% 35%;         /* sunset orange */
+    --hero-sky-low: 35 75% 70%;         /* sand haze at horizon */
+    --hero-sand-far: 32 50% 60%;        /* distant dunes */
+    --hero-sand-near: 32 55% 45%;       /* near dunes */
+    --hero-skyline: 215 25% 22%;        /* silhouette buildings */
+    --hero-glow: 42 100% 70%;           /* warm glow behind skyline */
   }
 
   * {
     border-color: hsl(var(--border));
   }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: "Inter", "Cairo", system-ui, -apple-system, sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Arabic text: Cairo body, Amiri headings */
+  [lang="ar"] body,
+  [dir="rtl"] body {
+    font-family: "Cairo", "Inter", system-ui, sans-serif;
+  }
+
+  [lang="ar"] h1,
+  [lang="ar"] h2,
+  [lang="ar"] h3,
+  [dir="rtl"] h1,
+  [dir="rtl"] h2,
+  [dir="rtl"] h3 {
+    font-family: "Amiri", "Cairo", serif;
+    font-weight: 700;
+  }
+
+  /* Smooth focus rings for accessibility (PRD 11.1) */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 0.25rem;
+  }
+}
+
+@layer components {
+  /* === Decorative motifs === */
+
+  /* Palmette divider — abstract palm-leaf motif used between sections
+   * on marketing surfaces. Pure SVG, scalable, theme-aware via currentColor. */
+  .saudi-palmette-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    color: hsl(var(--saudi-gold));
+  }
+  .saudi-palmette-divider::before,
+  .saudi-palmette-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      hsl(var(--saudi-gold) / 0.5),
+      transparent
+    );
+  }
+
+  /* Luxury gradient — sand to green, used for hero CTAs */
+  .saudi-gradient-primary {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--saudi-green-dark)) 0%,
+      hsl(var(--saudi-green)) 50%,
+      hsl(var(--saudi-green-light)) 100%
+    );
+  }
+
+  /* Gold gradient — for premium badges / feature highlights */
+  .saudi-gradient-gold {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--saudi-gold-soft)) 0%,
+      hsl(var(--saudi-gold)) 50%,
+      hsl(var(--saudi-gold-soft)) 100%
+    );
+  }
+
+  /* Sand-fade background — page section divider */
+  .saudi-gradient-sand {
+    background: linear-gradient(
+      180deg,
+      hsl(var(--saudi-sand)) 0%,
+      hsl(var(--background)) 100%
+    );
+  }
+
+  /* Glass card — used over hero backdrops */
+  .saudi-glass {
+    background: hsl(var(--saudi-honor) / 0.85);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid hsl(var(--saudi-honor) / 0.3);
+    box-shadow:
+      0 4px 6px -1px hsl(var(--saudi-night) / 0.05),
+      0 10px 25px -3px hsl(var(--saudi-night) / 0.08);
+  }
+
+  /* Premium card — subtle gold accent on hover */
+  .saudi-card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    box-shadow:
+      0 1px 2px hsl(var(--saudi-night) / 0.04),
+      0 4px 12px hsl(var(--saudi-night) / 0.04);
+    transition: all 200ms ease;
+  }
+  .saudi-card:hover {
+    border-color: hsl(var(--saudi-gold) / 0.3);
+    box-shadow:
+      0 4px 12px hsl(var(--saudi-night) / 0.06),
+      0 12px 32px hsl(var(--saudi-night) / 0.08);
+  }
+
+  /* Badge with subtle gold underline for "premium" / "Pro" tiers */
+  .saudi-badge-premium {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--saudi-gold) / 0.1),
+      hsl(var(--saudi-gold) / 0.05)
+    );
+    color: hsl(var(--saudi-green-dark));
+    border: 1px solid hsl(var(--saudi-gold) / 0.3);
+  }
+
+  /* RTL-aware chevron flip (lucide-react ChevronRight → mirror in RTL) */
+  [dir="rtl"] .rtl-flip {
+    transform: scaleX(-1);
+  }
+}
+
+@layer utilities {
+  /* Animated shimmer for the gold accents (decorative, not interactive) */
+  @keyframes saudi-shimmer {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+  .animate-saudi-shimmer {
+    animation: saudi-shimmer 3s ease-in-out infinite;
+  }
+
+  /* Soft floating motion for hero backdrops */
+  @keyframes saudi-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  .animate-saudi-float {
+    animation: saudi-float 6s ease-in-out infinite;
   }
 }

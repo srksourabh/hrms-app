@@ -1,39 +1,8 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, requireRole } from "../server";
 import { schema } from "@hrms-app/db";
-import {
-  goalTypeEnum, goalStatusEnum, createGoalSchema, updateGoalSchema, goalQuerySchema,
-  createGoalKeyResultSchema, updateGoalKeyResultSchema,
-  reviewCycleStatusEnum, reviewStatusEnum, reviewTypeEnum, createReviewCycleSchema, updateReviewCycleSchema, reviewCycleQuerySchema,
-  createReviewSchema, updateReviewSchema, reviewQuerySchema,
-  createReviewSectionSchema, updateReviewSectionSchema,
-  createReviewResponseSchema, updateReviewResponseSchema,
-  skillCategoryEnum, proficiencyLevelEnum, createSkillSchema, updateSkillSchema, skillQuerySchema,
-  createEmployeeSkillSchema, updateEmployeeSkillSchema, employeeSkillQuerySchema,
-  createSkillGapSchema, updateSkillGapSchema,
-  learningTypeEnum, learningStatusEnum, createLearningProgramSchema, updateLearningProgramSchema, learningProgramQuerySchema,
-  createLearningEnrollmentSchema, updateLearningEnrollmentSchema, learningEnrollmentQuerySchema,
-  careerPathStatusEnum, successionStatusEnum, createCareerRoleSchema, updateCareerRoleSchema, careerRoleQuerySchema,
-  createCareerPathSchema, updateCareerPathSchema,
-  createEmployeeCareerPathSchema, updateEmployeeCareerPathSchema,
-  createSuccessionPlanSchema, updateSuccessionPlanSchema,
-  createSuccessionCandidateSchema, updateSuccessionCandidateSchema,
-  engagementSurveyStatusEnum, stayInterviewStatusEnum, recognitionTypeEnum, rewardTypeEnum,
-  createEngagementSurveySchema, updateEngagementSurveySchema, engagementSurveyQuerySchema,
-  createSurveyResponseSchema, updateSurveyResponseSchema,
-  createStayInterviewSchema, updateStayInterviewSchema,
-  createRecognitionSchema,
-  createRewardSchema, updateRewardSchema, rewardQuerySchema,
-  createRewardRedemptionSchema,
-  createTotalRewardsStatementSchema, totalRewardsQuerySchema,
-  createCompensationPlanSchema, updateCompensationPlanSchema,
-  createCompensationAdjustmentSchema, updateCompensationAdjustmentSchema, compensationAdjustmentQuerySchema,
-  createTalentReviewSchema, updateTalentReviewSchema,
-  createTalentReviewParticipantSchema, updateTalentReviewParticipantSchema,
-  idSchema, dateRangeSchema,
-} from "@hrms-app/validators";
+import { goalStatusEnum, createGoalSchema, updateGoalSchema, goalQuerySchema, createGoalKeyResultSchema, updateGoalKeyResultSchema, reviewCycleStatusEnum, reviewStatusEnum, reviewTypeEnum, createReviewCycleSchema, updateReviewCycleSchema, reviewCycleQuerySchema, createReviewSchema, updateReviewSchema, reviewQuerySchema, createReviewSectionSchema, updateReviewSectionSchema, createReviewResponseSchema, updateReviewResponseSchema, skillCategoryEnum, proficiencyLevelEnum, createSkillSchema, updateSkillSchema, skillQuerySchema, createEmployeeSkillSchema, updateEmployeeSkillSchema, employeeSkillQuerySchema, createSkillGapSchema, updateSkillGapSchema, learningTypeEnum, learningStatusEnum, createLearningProgramSchema, updateLearningProgramSchema, learningProgramQuerySchema, createLearningEnrollmentSchema, updateLearningEnrollmentSchema, learningEnrollmentQuerySchema, careerPathStatusEnum, successionStatusEnum, createCareerRoleSchema, updateCareerRoleSchema, careerRoleQuerySchema, createCareerPathSchema, updateCareerPathSchema, createEmployeeCareerPathSchema, updateEmployeeCareerPathSchema, createSuccessionPlanSchema, updateSuccessionPlanSchema, createSuccessionCandidateSchema, updateSuccessionCandidateSchema, engagementSurveyStatusEnum, stayInterviewStatusEnum, recognitionTypeEnum, rewardTypeEnum, createEngagementSurveySchema, updateEngagementSurveySchema, engagementSurveyQuerySchema, createSurveyResponseSchema, updateSurveyResponseSchema, createStayInterviewSchema, updateStayInterviewSchema, createRecognitionSchema, createRewardSchema, updateRewardSchema, rewardQuerySchema, createRewardRedemptionSchema, createTotalRewardsStatementSchema, totalRewardsQuerySchema, createCompensationPlanSchema, updateCompensationPlanSchema, createCompensationAdjustmentSchema, updateCompensationAdjustmentSchema, compensationAdjustmentQuerySchema, createTalentReviewSchema, updateTalentReviewSchema, createTalentReviewParticipantSchema, updateTalentReviewParticipantSchema, idSchema, dateRangeSchema } from  "@hrms-app/validators";
 import { and, eq, desc } from "drizzle-orm";
-
 export const retentionRouter = createTRPCRouter({
   goal: createTRPCRouter({
     list: protectedProcedure
@@ -43,11 +12,9 @@ export const retentionRouter = createTRPCRouter({
         if (input?.employeeId) conditions.push(eq(schema.tenant.goals.employeeId, input.employeeId));
         if (input?.status) conditions.push(eq(schema.tenant.goals.status, input.status));
         if (input?.type) conditions.push(eq(schema.tenant.goals.type, input.type));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.goals.findMany({
             where,
@@ -64,10 +31,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.goals, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -82,14 +47,12 @@ export const retentionRouter = createTRPCRouter({
           },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager", "department_manager")
       .input(createGoalSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.goals).values(input).returning();
         return item;
       }),
-
     update: requireRole("super_admin", "hr_manager", "department_manager")
       .input(z.object({ id: idSchema, data: updateGoalSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -100,14 +63,12 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
         await ctx.db.delete(schema.tenant.goals).where(eq(schema.tenant.goals.id, input));
         return { success: true };
       }),
-
     updateStatus: requireRole("super_admin", "hr_manager", "department_manager")
       .input(z.object({ id: idSchema, status: goalStatusEnum }))
       .mutation(async ({ ctx, input }) => {
@@ -118,7 +79,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     updateProgress: requireRole("super_admin", "hr_manager", "department_manager")
       .input(z.object({ id: idSchema, progress: z.number().min(0).max(100) }))
       .mutation(async ({ ctx, input }) => {
@@ -130,7 +90,6 @@ export const retentionRouter = createTRPCRouter({
         return item;
       }),
   }),
-
   goalKeyResult: createTRPCRouter({
     list: protectedProcedure
       .input(z.object({
@@ -141,11 +100,9 @@ export const retentionRouter = createTRPCRouter({
       .query(async ({ ctx, input }) => {
         const conditions = [];
         if (input?.goalId) conditions.push(eq(schema.tenant.goalKeyResults.goalId, input.goalId));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.goalKeyResults.findMany({
             where,
@@ -156,10 +113,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.goalKeyResults, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -168,14 +123,12 @@ export const retentionRouter = createTRPCRouter({
           with: { goal: true },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager")
       .input(createGoalKeyResultSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.goalKeyResults).values(input).returning();
         return item;
       }),
-
     update: requireRole("super_admin", "hr_manager")
       .input(z.object({ id: idSchema, data: updateGoalKeyResultSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -186,7 +139,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -194,7 +146,6 @@ export const retentionRouter = createTRPCRouter({
         return { success: true };
       }),
   }),
-
   reviewCycle: createTRPCRouter({
     list: protectedProcedure
       .input(reviewCycleQuerySchema.optional().default({}))
@@ -202,11 +153,9 @@ export const retentionRouter = createTRPCRouter({
         const conditions = [];
         if (input?.status) conditions.push(eq(schema.tenant.reviewCycles.status, input.status));
         if (input?.type) conditions.push(eq(schema.tenant.reviewCycles.type, input.type));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.reviewCycles.findMany({
             where,
@@ -217,10 +166,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.reviewCycles, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -229,14 +176,12 @@ export const retentionRouter = createTRPCRouter({
           with: { reviews: true, sections: true },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager")
       .input(createReviewCycleSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.reviewCycles).values(input).returning();
         return item;
       }),
-
     update: requireRole("super_admin", "hr_manager")
       .input(z.object({ id: idSchema, data: updateReviewCycleSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -247,7 +192,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -255,7 +199,6 @@ export const retentionRouter = createTRPCRouter({
         return { success: true };
       }),
   }),
-
   review: createTRPCRouter({
     list: protectedProcedure
       .input(reviewQuerySchema.optional().default({}))
@@ -264,11 +207,9 @@ export const retentionRouter = createTRPCRouter({
         if (input?.reviewCycleId) conditions.push(eq(schema.tenant.reviews.reviewCycleId, input.reviewCycleId));
         if (input?.employeeId) conditions.push(eq(schema.tenant.reviews.employeeId, input.employeeId));
         if (input?.status) conditions.push(eq(schema.tenant.reviews.status, input.status));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.reviews.findMany({
             where,
@@ -284,10 +225,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.reviews, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -301,14 +240,12 @@ export const retentionRouter = createTRPCRouter({
           },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager", "department_manager")
       .input(createReviewSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.reviews).values(input).returning();
         return item;
       }),
-
     update: requireRole("super_admin", "hr_manager", "department_manager")
       .input(z.object({ id: idSchema, data: updateReviewSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -319,7 +256,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -327,7 +263,6 @@ export const retentionRouter = createTRPCRouter({
         return { success: true };
       }),
   }),
-
   reviewSection: createTRPCRouter({
     list: protectedProcedure
       .input(z.object({
@@ -338,11 +273,9 @@ export const retentionRouter = createTRPCRouter({
       .query(async ({ ctx, input }) => {
         const conditions = [];
         if (input?.reviewCycleId) conditions.push(eq(schema.tenant.reviewSections.reviewCycleId, input.reviewCycleId));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.reviewSections.findMany({
             where,
@@ -353,10 +286,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.reviewSections, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -365,14 +296,12 @@ export const retentionRouter = createTRPCRouter({
           with: { cycle: true, responses: true },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager")
       .input(createReviewSectionSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.reviewSections).values(input).returning();
         return item;
       }),
-
     update: requireRole("super_admin", "hr_manager")
       .input(z.object({ id: idSchema, data: updateReviewSectionSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -383,7 +312,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -391,7 +319,6 @@ export const retentionRouter = createTRPCRouter({
         return { success: true };
       }),
   }),
-
   reviewResponse: createTRPCRouter({
     list: protectedProcedure
       .input(z.object({
@@ -404,11 +331,9 @@ export const retentionRouter = createTRPCRouter({
         const conditions = [];
         if (input?.reviewId) conditions.push(eq(schema.tenant.reviewResponses.reviewId, input.reviewId));
         if (input?.sectionId) conditions.push(eq(schema.tenant.reviewResponses.sectionId, input.sectionId));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.reviewResponses.findMany({
             where,
@@ -419,10 +344,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.reviewResponses, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -431,14 +354,12 @@ export const retentionRouter = createTRPCRouter({
           with: { review: true, section: true, reviewer: true },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager", "department_manager")
       .input(createReviewResponseSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.reviewResponses).values(input).returning();
         return item;
       }),
-
     update: requireRole("super_admin", "hr_manager", "department_manager")
       .input(z.object({ id: idSchema, data: updateReviewResponseSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -449,7 +370,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -457,7 +377,6 @@ export const retentionRouter = createTRPCRouter({
         return { success: true };
       }),
   }),
-
   skill: createTRPCRouter({
     list: protectedProcedure
       .input(skillQuerySchema.optional().default({}))
@@ -465,11 +384,9 @@ export const retentionRouter = createTRPCRouter({
         const conditions = [];
         if (input?.category) conditions.push(eq(schema.tenant.skills.category, input.category));
         if (input?.isActive !== undefined) conditions.push(eq(schema.tenant.skills.isActive, input.isActive));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.skills.findMany({
             where,
@@ -480,10 +397,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.skills, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -492,14 +407,12 @@ export const retentionRouter = createTRPCRouter({
           with: { employeeSkills: true, skillGaps: true },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager")
       .input(createSkillSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.skills).values(input).returning();
         return item;
       }),
-
     update: requireRole("super_admin", "hr_manager")
       .input(z.object({ id: idSchema, data: updateSkillSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -510,7 +423,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -518,7 +430,6 @@ export const retentionRouter = createTRPCRouter({
         return { success: true };
       }),
   }),
-
   employeeSkill: createTRPCRouter({
     list: protectedProcedure
       .input(employeeSkillQuerySchema.optional().default({}))
@@ -527,11 +438,9 @@ export const retentionRouter = createTRPCRouter({
         if (input?.employeeId) conditions.push(eq(schema.tenant.employeeSkills.employeeId, input.employeeId));
         if (input?.skillId) conditions.push(eq(schema.tenant.employeeSkills.skillId, input.skillId));
         if (input?.proficiencyLevel) conditions.push(eq(schema.tenant.employeeSkills.proficiencyLevel, input.proficiencyLevel));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.employeeSkills.findMany({
             where,
@@ -542,10 +451,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.employeeSkills, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -554,14 +461,12 @@ export const retentionRouter = createTRPCRouter({
           with: { employee: true, skill: true, verifiedBy: true },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager")
       .input(createEmployeeSkillSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.employeeSkills).values(input).returning();
         return item;
       }),
-
     update: requireRole("super_admin", "hr_manager")
       .input(z.object({ id: idSchema, data: updateEmployeeSkillSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -572,7 +477,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -580,7 +484,6 @@ export const retentionRouter = createTRPCRouter({
         return { success: true };
       }),
   }),
-
   skillGap: createTRPCRouter({
     list: protectedProcedure
       .input(z.object({
@@ -593,11 +496,9 @@ export const retentionRouter = createTRPCRouter({
         const conditions = [];
         if (input?.employeeId) conditions.push(eq(schema.tenant.skillGaps.employeeId, input.employeeId));
         if (input?.skillId) conditions.push(eq(schema.tenant.skillGaps.skillId, input.skillId));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.skillGaps.findMany({
             where,
@@ -608,10 +509,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.skillGaps, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -620,14 +519,12 @@ export const retentionRouter = createTRPCRouter({
           with: { employee: true, skill: true },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager")
       .input(createSkillGapSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.skillGaps).values(input).returning();
         return item;
       }),
-
     update: requireRole("super_admin", "hr_manager")
       .input(z.object({ id: idSchema, data: updateSkillGapSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -638,7 +535,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -646,7 +542,6 @@ export const retentionRouter = createTRPCRouter({
         return { success: true };
       }),
   }),
-
   learningProgram: createTRPCRouter({
     list: protectedProcedure
       .input(learningProgramQuerySchema.optional().default({}))
@@ -654,11 +549,9 @@ export const retentionRouter = createTRPCRouter({
         const conditions = [];
         if (input?.type) conditions.push(eq(schema.tenant.learningPrograms.type, input.type));
         if (input?.isActive !== undefined) conditions.push(eq(schema.tenant.learningPrograms.isActive, input.isActive));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.learningPrograms.findMany({
             where,
@@ -669,10 +562,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.learningPrograms, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -681,14 +572,12 @@ export const retentionRouter = createTRPCRouter({
           with: { enrollments: true },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager")
       .input(createLearningProgramSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.learningPrograms).values(input).returning();
         return item;
       }),
-
     update: requireRole("super_admin", "hr_manager")
       .input(z.object({ id: idSchema, data: updateLearningProgramSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -699,7 +588,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -707,7 +595,6 @@ export const retentionRouter = createTRPCRouter({
         return { success: true };
       }),
   }),
-
   learningEnrollment: createTRPCRouter({
     list: protectedProcedure
       .input(learningEnrollmentQuerySchema.optional().default({}))
@@ -716,11 +603,9 @@ export const retentionRouter = createTRPCRouter({
         if (input?.employeeId) conditions.push(eq(schema.tenant.learningEnrollments.employeeId, input.employeeId));
         if (input?.programId) conditions.push(eq(schema.tenant.learningEnrollments.programId, input.programId));
         if (input?.status) conditions.push(eq(schema.tenant.learningEnrollments.status, input.status));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.learningEnrollments.findMany({
             where,
@@ -731,10 +616,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.learningEnrollments, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -743,14 +626,12 @@ export const retentionRouter = createTRPCRouter({
           with: { employee: true, program: true, approvedBy: true },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager")
       .input(createLearningEnrollmentSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.learningEnrollments).values(input).returning();
         return item;
       }),
-
     update: requireRole("super_admin", "hr_manager")
       .input(z.object({ id: idSchema, data: updateLearningEnrollmentSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -761,7 +642,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -769,7 +649,6 @@ export const retentionRouter = createTRPCRouter({
         return { success: true };
       }),
   }),
-
   careerRole: createTRPCRouter({
     list: protectedProcedure
       .input(careerRoleQuerySchema.optional().default({}))
@@ -777,11 +656,9 @@ export const retentionRouter = createTRPCRouter({
         const conditions = [];
         if (input?.departmentId) conditions.push(eq(schema.tenant.careerRoles.departmentId, input.departmentId));
         if (input?.isActive !== undefined) conditions.push(eq(schema.tenant.careerRoles.isActive, input.isActive));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.careerRoles.findMany({
             where,
@@ -792,10 +669,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.careerRoles, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -804,14 +679,12 @@ export const retentionRouter = createTRPCRouter({
           with: { department: true, fromPaths: true, toPaths: true },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager")
       .input(createCareerRoleSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.careerRoles).values(input).returning();
         return item;
       }),
-
     update: requireRole("super_admin", "hr_manager")
       .input(z.object({ id: idSchema, data: updateCareerRoleSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -822,7 +695,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -830,7 +702,6 @@ export const retentionRouter = createTRPCRouter({
         return { success: true };
       }),
   }),
-
   careerPath: createTRPCRouter({
     list: protectedProcedure
       .input(z.object({
@@ -843,11 +714,9 @@ export const retentionRouter = createTRPCRouter({
         const conditions = [];
         if (input?.fromRoleId) conditions.push(eq(schema.tenant.careerPaths.fromRoleId, input.fromRoleId));
         if (input?.toRoleId) conditions.push(eq(schema.tenant.careerPaths.toRoleId, input.toRoleId));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.careerPaths.findMany({
             where,
@@ -858,10 +727,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.careerPaths, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -870,14 +737,12 @@ export const retentionRouter = createTRPCRouter({
           with: { fromRole: true, toRole: true, employeeCareerPaths: true },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager")
       .input(createCareerPathSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.careerPaths).values(input).returning();
         return item;
       }),
-
     update: requireRole("super_admin", "hr_manager")
       .input(z.object({ id: idSchema, data: updateCareerPathSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -888,7 +753,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -896,7 +760,6 @@ export const retentionRouter = createTRPCRouter({
         return { success: true };
       }),
   }),
-
   employeeCareerPath: createTRPCRouter({
     list: protectedProcedure
       .input(z.object({
@@ -909,11 +772,9 @@ export const retentionRouter = createTRPCRouter({
         const conditions = [];
         if (input?.employeeId) conditions.push(eq(schema.tenant.employeeCareerPaths.employeeId, input.employeeId));
         if (input?.careerPathId) conditions.push(eq(schema.tenant.employeeCareerPaths.careerPathId, input.careerPathId));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.employeeCareerPaths.findMany({
             where,
@@ -924,10 +785,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.employeeCareerPaths, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -936,14 +795,12 @@ export const retentionRouter = createTRPCRouter({
           with: { employee: true, careerPath: true },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager")
       .input(createEmployeeCareerPathSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.employeeCareerPaths).values(input).returning();
         return item;
       }),
-
     update: requireRole("super_admin", "hr_manager")
       .input(z.object({ id: idSchema, data: updateEmployeeCareerPathSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -954,7 +811,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -962,7 +818,6 @@ export const retentionRouter = createTRPCRouter({
         return { success: true };
       }),
   }),
-
   successionPlan: createTRPCRouter({
     list: protectedProcedure
       .input(z.object({
@@ -977,11 +832,9 @@ export const retentionRouter = createTRPCRouter({
         if (input?.roleId) conditions.push(eq(schema.tenant.successionPlans.roleId, input.roleId));
         if (input?.departmentId) conditions.push(eq(schema.tenant.successionPlans.departmentId, input.departmentId));
         if (input?.status) conditions.push(eq(schema.tenant.successionPlans.status, input.status));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.successionPlans.findMany({
             where,
@@ -992,10 +845,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.successionPlans, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -1004,14 +855,12 @@ export const retentionRouter = createTRPCRouter({
           with: { role: true, department: true, incumbent: true, candidates: true },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager")
       .input(createSuccessionPlanSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.successionPlans).values(input).returning();
         return item;
       }),
-
     update: requireRole("super_admin", "hr_manager")
       .input(z.object({ id: idSchema, data: updateSuccessionPlanSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -1022,7 +871,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -1030,7 +878,6 @@ export const retentionRouter = createTRPCRouter({
         return { success: true };
       }),
   }),
-
   successionCandidate: createTRPCRouter({
     list: protectedProcedure
       .input(z.object({
@@ -1043,11 +890,9 @@ export const retentionRouter = createTRPCRouter({
         const conditions = [];
         if (input?.successionPlanId) conditions.push(eq(schema.tenant.successionCandidates.successionPlanId, input.successionPlanId));
         if (input?.employeeId) conditions.push(eq(schema.tenant.successionCandidates.employeeId, input.employeeId));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.successionCandidates.findMany({
             where,
@@ -1058,10 +903,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.successionCandidates, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -1070,14 +913,12 @@ export const retentionRouter = createTRPCRouter({
           with: { plan: true, employee: true, nominatedBy: true },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager")
       .input(createSuccessionCandidateSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.successionCandidates).values(input).returning();
         return item;
       }),
-
     update: requireRole("super_admin", "hr_manager")
       .input(z.object({ id: idSchema, data: updateSuccessionCandidateSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -1088,7 +929,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -1096,18 +936,15 @@ export const retentionRouter = createTRPCRouter({
         return { success: true };
       }),
   }),
-
   engagementSurvey: createTRPCRouter({
     list: protectedProcedure
       .input(engagementSurveyQuerySchema.optional().default({}))
       .query(async ({ ctx, input }) => {
         const conditions = [];
         if (input?.status) conditions.push(eq(schema.tenant.engagementSurveys.status, input.status));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.engagementSurveys.findMany({
             where,
@@ -1118,10 +955,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.engagementSurveys, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -1130,14 +965,12 @@ export const retentionRouter = createTRPCRouter({
           with: { responses: true },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager")
       .input(createEngagementSurveySchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.engagementSurveys).values(input).returning();
         return item;
       }),
-
     update: requireRole("super_admin", "hr_manager")
       .input(z.object({ id: idSchema, data: updateEngagementSurveySchema }))
       .mutation(async ({ ctx, input }) => {
@@ -1148,14 +981,12 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
         await ctx.db.delete(schema.tenant.engagementSurveys).where(eq(schema.tenant.engagementSurveys.id, input));
         return { success: true };
       }),
-
     open: requireRole("super_admin", "hr_manager")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -1166,7 +997,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     close: requireRole("super_admin", "hr_manager")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -1178,7 +1008,6 @@ export const retentionRouter = createTRPCRouter({
         return item;
       }),
   }),
-
   surveyResponse: createTRPCRouter({
     list: protectedProcedure
       .input(z.object({
@@ -1191,11 +1020,9 @@ export const retentionRouter = createTRPCRouter({
         const conditions = [];
         if (input?.surveyId) conditions.push(eq(schema.tenant.surveyResponses.surveyId, input.surveyId));
         if (input?.employeeId) conditions.push(eq(schema.tenant.surveyResponses.employeeId, input.employeeId));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.surveyResponses.findMany({
             where,
@@ -1206,10 +1033,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.surveyResponses, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -1218,14 +1043,12 @@ export const retentionRouter = createTRPCRouter({
           with: { survey: true, employee: true },
         });
       }),
-
     create: protectedProcedure
       .input(createSurveyResponseSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.surveyResponses).values(input).returning();
         return item;
       }),
-
     update: protectedProcedure
       .input(z.object({ id: idSchema, data: updateSurveyResponseSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -1236,7 +1059,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -1244,7 +1066,6 @@ export const retentionRouter = createTRPCRouter({
         return { success: true };
       }),
   }),
-
   stayInterview: createTRPCRouter({
     list: protectedProcedure
       .input(z.object({
@@ -1259,11 +1080,9 @@ export const retentionRouter = createTRPCRouter({
         if (input?.employeeId) conditions.push(eq(schema.tenant.stayInterviews.employeeId, input.employeeId));
         if (input?.interviewerId) conditions.push(eq(schema.tenant.stayInterviews.interviewerId, input.interviewerId));
         if (input?.status) conditions.push(eq(schema.tenant.stayInterviews.status, input.status));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.stayInterviews.findMany({
             where,
@@ -1274,10 +1093,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.stayInterviews, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -1286,14 +1103,12 @@ export const retentionRouter = createTRPCRouter({
           with: { employee: true, interviewer: true },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager")
       .input(createStayInterviewSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.stayInterviews).values(input).returning();
         return item;
       }),
-
     update: requireRole("super_admin", "hr_manager")
       .input(z.object({ id: idSchema, data: updateStayInterviewSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -1304,14 +1119,12 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
         await ctx.db.delete(schema.tenant.stayInterviews).where(eq(schema.tenant.stayInterviews.id, input));
         return { success: true };
       }),
-
     complete: requireRole("super_admin", "hr_manager")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -1323,7 +1136,6 @@ export const retentionRouter = createTRPCRouter({
         return item;
       }),
   }),
-
   recognition: createTRPCRouter({
     list: protectedProcedure
       .input(z.object({
@@ -1336,11 +1148,9 @@ export const retentionRouter = createTRPCRouter({
         const conditions = [];
         if (input?.fromEmployeeId) conditions.push(eq(schema.tenant.recognitions.fromEmployeeId, input.fromEmployeeId));
         if (input?.toEmployeeId) conditions.push(eq(schema.tenant.recognitions.toEmployeeId, input.toEmployeeId));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.recognitions.findMany({
             where,
@@ -1351,10 +1161,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.recognitions, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -1363,14 +1171,12 @@ export const retentionRouter = createTRPCRouter({
           with: { fromEmployee: true, toEmployee: true },
         });
       }),
-
     create: protectedProcedure
       .input(createRecognitionSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.recognitions).values(input).returning();
         return item;
       }),
-
     update: protectedProcedure
       .input(z.object({ id: idSchema, data: createRecognitionSchema.partial() }))
       .mutation(async ({ ctx, input }) => {
@@ -1381,7 +1187,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -1389,7 +1194,6 @@ export const retentionRouter = createTRPCRouter({
         return { success: true };
       }),
   }),
-
   reward: createTRPCRouter({
     list: protectedProcedure
       .input(rewardQuerySchema.optional().default({}))
@@ -1397,11 +1201,9 @@ export const retentionRouter = createTRPCRouter({
         const conditions = [];
         if (input?.type) conditions.push(eq(schema.tenant.rewards.type, input.type));
         if (input?.isActive !== undefined) conditions.push(eq(schema.tenant.rewards.isActive, input.isActive));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.rewards.findMany({
             where,
@@ -1412,10 +1214,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.rewards, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -1424,14 +1224,12 @@ export const retentionRouter = createTRPCRouter({
           with: { redemptions: true },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager")
       .input(createRewardSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.rewards).values(input).returning();
         return item;
       }),
-
     update: requireRole("super_admin", "hr_manager")
       .input(z.object({ id: idSchema, data: updateRewardSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -1442,7 +1240,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -1450,7 +1247,6 @@ export const retentionRouter = createTRPCRouter({
         return { success: true };
       }),
   }),
-
   rewardRedemption: createTRPCRouter({
     list: protectedProcedure
       .input(z.object({
@@ -1463,11 +1259,9 @@ export const retentionRouter = createTRPCRouter({
         const conditions = [];
         if (input?.rewardId) conditions.push(eq(schema.tenant.rewardRedemptions.rewardId, input.rewardId));
         if (input?.employeeId) conditions.push(eq(schema.tenant.rewardRedemptions.employeeId, input.employeeId));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.rewardRedemptions.findMany({
             where,
@@ -1478,10 +1272,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.rewardRedemptions, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -1490,14 +1282,12 @@ export const retentionRouter = createTRPCRouter({
           with: { reward: true, employee: true, approvedBy: true },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager")
       .input(createRewardRedemptionSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.rewardRedemptions).values(input).returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -1505,18 +1295,15 @@ export const retentionRouter = createTRPCRouter({
         return { success: true };
       }),
   }),
-
   totalRewardsStatement: createTRPCRouter({
     list: protectedProcedure
       .input(totalRewardsQuerySchema.optional().default({}))
       .query(async ({ ctx, input }) => {
         const conditions = [];
         if (input?.employeeId) conditions.push(eq(schema.tenant.totalRewardsStatements.employeeId, input.employeeId));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.totalRewardsStatements.findMany({
             where,
@@ -1527,10 +1314,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.totalRewardsStatements, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -1539,14 +1324,12 @@ export const retentionRouter = createTRPCRouter({
           with: { employee: true },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager")
       .input(createTotalRewardsStatementSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.totalRewardsStatements).values(input).returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -1554,7 +1337,6 @@ export const retentionRouter = createTRPCRouter({
         return { success: true };
       }),
   }),
-
   compensationPlan: createTRPCRouter({
     list: protectedProcedure
       .input(z.object({
@@ -1567,11 +1349,9 @@ export const retentionRouter = createTRPCRouter({
         const conditions = [];
         if (input?.type) conditions.push(eq(schema.tenant.compensationPlans.type, input.type));
         if (input?.status) conditions.push(eq(schema.tenant.compensationPlans.status, input.status));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.compensationPlans.findMany({
             where,
@@ -1582,10 +1362,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.compensationPlans, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -1594,14 +1372,12 @@ export const retentionRouter = createTRPCRouter({
           with: { adjustments: true },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager")
       .input(createCompensationPlanSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.compensationPlans).values(input).returning();
         return item;
       }),
-
     update: requireRole("super_admin", "hr_manager")
       .input(z.object({ id: idSchema, data: updateCompensationPlanSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -1612,7 +1388,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -1620,7 +1395,6 @@ export const retentionRouter = createTRPCRouter({
         return { success: true };
       }),
   }),
-
   compensationAdjustment: createTRPCRouter({
     list: protectedProcedure
       .input(compensationAdjustmentQuerySchema.optional().default({}))
@@ -1629,11 +1403,9 @@ export const retentionRouter = createTRPCRouter({
         if (input?.planId) conditions.push(eq(schema.tenant.compensationAdjustments.planId, input.planId));
         if (input?.employeeId) conditions.push(eq(schema.tenant.compensationAdjustments.employeeId, input.employeeId));
         if (input?.status) conditions.push(eq(schema.tenant.compensationAdjustments.status, input.status));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.compensationAdjustments.findMany({
             where,
@@ -1644,10 +1416,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.compensationAdjustments, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -1656,14 +1426,12 @@ export const retentionRouter = createTRPCRouter({
           with: { plan: true, employee: true, approvedBy: true },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager")
       .input(createCompensationAdjustmentSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.compensationAdjustments).values(input).returning();
         return item;
       }),
-
     update: requireRole("super_admin", "hr_manager")
       .input(z.object({ id: idSchema, data: updateCompensationAdjustmentSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -1674,7 +1442,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -1682,7 +1449,6 @@ export const retentionRouter = createTRPCRouter({
         return { success: true };
       }),
   }),
-
   talentReview: createTRPCRouter({
     list: protectedProcedure
       .input(z.object({
@@ -1693,11 +1459,9 @@ export const retentionRouter = createTRPCRouter({
       .query(async ({ ctx, input }) => {
         const conditions = [];
         if (input?.status) conditions.push(eq(schema.tenant.talentReviews.status, input.status));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.talentReviews.findMany({
             where,
@@ -1708,10 +1472,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.talentReviews, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -1720,14 +1482,12 @@ export const retentionRouter = createTRPCRouter({
           with: { participants: true },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager")
       .input(createTalentReviewSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.talentReviews).values(input).returning();
         return item;
       }),
-
     update: requireRole("super_admin", "hr_manager")
       .input(z.object({ id: idSchema, data: updateTalentReviewSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -1738,7 +1498,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
@@ -1746,7 +1505,6 @@ export const retentionRouter = createTRPCRouter({
         return { success: true };
       }),
   }),
-
   talentReviewParticipant: createTRPCRouter({
     list: protectedProcedure
       .input(z.object({
@@ -1759,11 +1517,9 @@ export const retentionRouter = createTRPCRouter({
         const conditions = [];
         if (input?.talentReviewId) conditions.push(eq(schema.tenant.talentReviewParticipants.talentReviewId, input.talentReviewId));
         if (input?.employeeId) conditions.push(eq(schema.tenant.talentReviewParticipants.employeeId, input.employeeId));
-
         const where = conditions.length > 0 ? and(...conditions) : undefined;
         const page = input?.page ?? 1;
         const pageSize = input?.pageSize ?? 20;
-
         const [items, total] = await Promise.all([
           ctx.db.query.talentReviewParticipants.findMany({
             where,
@@ -1774,10 +1530,8 @@ export const retentionRouter = createTRPCRouter({
           }),
           ctx.db.$count(schema.tenant.talentReviewParticipants, where),
         ]);
-
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
-
     getById: protectedProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
@@ -1786,14 +1540,12 @@ export const retentionRouter = createTRPCRouter({
           with: { review: true, employee: true, reviewer: true },
         });
       }),
-
     create: requireRole("super_admin", "hr_manager")
       .input(createTalentReviewParticipantSchema)
       .mutation(async ({ ctx, input }) => {
         const [item] = await ctx.db.insert(schema.tenant.talentReviewParticipants).values(input).returning();
         return item;
       }),
-
     update: requireRole("super_admin", "hr_manager")
       .input(z.object({ id: idSchema, data: updateTalentReviewParticipantSchema }))
       .mutation(async ({ ctx, input }) => {
@@ -1804,7 +1556,6 @@ export const retentionRouter = createTRPCRouter({
           .returning();
         return item;
       }),
-
     delete: requireRole("super_admin")
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {

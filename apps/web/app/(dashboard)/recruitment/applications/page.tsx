@@ -1,11 +1,9 @@
 "use client";
-
 import { useState } from "react";
 import Link from "next/link";
 import { Button, Input, Card, CardHeader, CardTitle, CardContent, Badge, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Tabs, TabsList, TabsTrigger, TabsContent } from "@hrms-app/ui";
 import { api } from "~/trpc/react";
 import { Plus, Search, FileText, Briefcase, Users, Clock, Filter, ChevronDown, ChevronUp } from "lucide-react";
-
 const statusColors: Record<string, "default" | "destructive" | "secondary" | "outline"> = {
   applied: "outline",
   screening: "secondary",
@@ -19,7 +17,6 @@ const statusColors: Record<string, "default" | "destructive" | "secondary" | "ou
   rejected: "destructive",
   withdrawn: "destructive",
 };
-
 export default function ApplicationsPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -27,16 +24,13 @@ export default function ApplicationsPage() {
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState("all");
   const pageSize = 20;
-
   const { data, isLoading } = api.recruitment.application.list.useQuery({
     status: (status || undefined) as any,
     jobRequisitionId: (jobReqId || undefined) as any,
     page,
     pageSize,
   } as any);
-
   const jobRequisitions = api.recruitment.jobRequisition.list.useQuery({ pageSize: 100 });
-
   const tabs = [
     { id: "all", label: "All" },
     { id: "applied", label: "Applied" },
@@ -46,7 +40,6 @@ export default function ApplicationsPage() {
     { id: "hired", label: "Hired" },
     { id: "rejected", label: "Rejected" },
   ];
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -55,7 +48,6 @@ export default function ApplicationsPage() {
           <p className="text-muted-foreground">Track and manage job applications</p>
         </div>
       </div>
-
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Filters</CardTitle>
@@ -102,14 +94,12 @@ export default function ApplicationsPage() {
           </Select>
         </CardContent>
       </Card>
-
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-7">
           {tabs.map((tab: any) => (
             <TabsTrigger key={tab.id} value={tab.id}>{tab.label}</TabsTrigger>
           ))}
         </TabsList>
-
         <TabsContent value="all" className="mt-4">
           <ApplicationsTable 
             data={data} 
@@ -136,7 +126,6 @@ export default function ApplicationsPage() {
     </div>
   );
 }
-
 function ApplicationsTable({ data, isLoading, page, setPage, pageSize, statusFilter }: {
   data: any;
   isLoading: boolean;
@@ -150,7 +139,6 @@ function ApplicationsTable({ data, isLoading, page, setPage, pageSize, statusFil
     (statusFilter === "interviewing" && ["phone_screen", "technical_interview", "final_interview"].includes(app.status)) ||
     (statusFilter === "offer" && ["offer_extended", "offer_accepted", "offer_declined"].includes(app.status))
   ) ?? [];
-
   return (
     <Card>
       <CardContent className="p-0">

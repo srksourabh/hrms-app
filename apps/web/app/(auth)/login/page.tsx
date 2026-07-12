@@ -4,6 +4,7 @@ import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@hrms-app/ui";
+import { SaudiBackdrop, SaudiFlagMark, SaudiPalmette } from "~/components/saudi/saudi-backdrop";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,19 +20,17 @@ export default function LoginPage() {
 
     try {
       const result = await signIn("credentials", { email, password, redirect: false });
-
       if (result?.error) {
-        setError("Invalid email or password");
+        setError("بيانات الدخول غير صحيحة");
         setLoading(false);
         return;
       }
-
       if (result?.ok) {
         router.push("/");
         router.refresh();
       }
     } catch {
-      setError("Something went wrong. Try again.");
+      setError("حدث خطأ ما. حاول مرة أخرى");
       setLoading(false);
     }
   }
@@ -48,91 +47,173 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-stone-100 p-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center space-y-1">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-green-800 shadow-sm">
-            <span className="text-xl font-bold text-white">U</span>
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">UDS-HR</h1>
-          <p className="text-sm text-slate-500">Saudi HR & Payroll Platform</p>
+    <div className="relative min-h-screen w-full" dir="ltr">
+      {/* Backdrop — Riyadh variant with dim overlay for content readability */}
+      <SaudiBackdrop variant="riyadh" dim className="absolute inset-0" />
+
+      {/* Top bar: language toggle + brand */}
+      <header className="relative z-10 flex items-center justify-between px-6 py-5 sm:px-10">
+        <div className="flex items-center gap-3">
+          <SaudiFlagMark className="h-7 w-auto drop-shadow-md" />
+          <span className="text-lg font-semibold tracking-tight text-white">
+            UDS-HR
+          </span>
         </div>
+        <div className="flex items-center gap-2 text-sm text-white/80">
+          <button
+            type="button"
+            className="rounded-full px-3 py-1 transition hover:bg-white/10 hover:text-white"
+          >
+            العربية
+          </button>
+          <span className="opacity-50">|</span>
+          <span className="font-medium text-white">EN</span>
+        </div>
+      </header>
 
-        <Card className="border border-slate-200/60 bg-white shadow-md">
-          <CardHeader className="pb-2 text-center">
-            <CardTitle className="text-lg font-semibold text-slate-900">Welcome back</CardTitle>
-            <CardDescription className="text-sm text-slate-500">
-              Sign in to your account to continue
-            </CardDescription>
-          </CardHeader>
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4 pt-4">
-              {error && (
-                <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">
-                  {error}
+      {/* Main content: split layout — visual left, form right */}
+      <main className="relative z-10 grid min-h-[calc(100vh-80px)] w-full grid-cols-1 lg:grid-cols-2">
+        {/* Left: marketing / cultural intro (hidden on mobile) */}
+        <section className="hidden flex-col justify-center px-12 text-white lg:flex lg:px-20">
+          <p className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-[hsl(var(--saudi-gold))]">
+            Saudi Arabia · المملكة العربية السعودية
+          </p>
+          <h1 className="mb-6 text-5xl font-bold leading-tight tracking-tight">
+            Where heritage meets <br />
+            <span className="text-[hsl(var(--saudi-gold))]">modern workforce.</span>
+          </h1>
+          <p className="mb-10 max-w-md text-lg leading-relaxed text-white/85">
+            The AI-native HR & payroll platform built for the Kingdom's
+            SMEs — compliant with Qiwa, Mudad, and GOSI from day one.
+          </p>
+
+          <SaudiPalmette className="mb-10 h-5 w-40 text-[hsl(var(--saudi-gold))]" />
+
+          <div className="grid grid-cols-3 gap-6">
+            {[
+              { label: "Riyadh", labelAr: "الرياض", desc: "Capital" },
+              { label: "Jeddah", labelAr: "جدة", desc: "Coast" },
+              { label: "Dammam", labelAr: "الدمام", desc: "East" },
+            ].map((c) => (
+              <div key={c.label} className="text-white/90">
+                <p className="text-2xl font-semibold">{c.label}</p>
+                <p className="text-sm text-[hsl(var(--saudi-gold))]">{c.labelAr}</p>
+                <p className="mt-1 text-xs uppercase tracking-wider text-white/50">
+                  {c.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Right: login form */}
+        <section className="flex items-center justify-center px-6 py-10 sm:px-10">
+          <Card className="saudi-glass w-full max-w-md border-0 shadow-2xl">
+            <CardHeader className="pb-2 text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[hsl(var(--saudi-green))] to-[hsl(var(--saudi-green-dark))] shadow-lg">
+                <span className="text-2xl font-bold text-white">U</span>
+              </div>
+              <CardTitle className="text-2xl font-bold tracking-tight">
+                Welcome back
+              </CardTitle>
+              <CardDescription>
+                Sign in to your UDS-HR account
+              </CardDescription>
+            </CardHeader>
+
+            <form onSubmit={handleSubmit}>
+              <CardContent className="space-y-4 pt-4">
+                {error && (
+                  <div
+                    role="alert"
+                    className="rounded-lg border border-[hsl(var(--saudi-rose))]/30 bg-[hsl(var(--saudi-rose))]/10 px-4 py-3 text-sm text-[hsl(var(--saudi-rose))]"
+                  >
+                    {error}
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-medium text-slate-700"
+                  >
+                    Email
+                  </label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@company.sa"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="h-11 border-slate-300 bg-white"
+                  />
                 </div>
-              )}
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-slate-700">Email</label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="h-10 border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-green-700/40"
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium text-slate-700">Password</label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="h-10 border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-green-700/40"
-                />
-              </div>
-            </CardContent>
-            <CardFooter className="flex flex-col gap-3 pt-2">
-              <Button
-                type="submit"
-                className="w-full h-10 bg-green-800 text-white font-medium hover:bg-green-900 active:bg-green-950"
-                disabled={loading}
-              >
-                {loading ? "Signing in..." : "Sign In"}
-              </Button>
-              <div className="relative flex items-center w-full">
-                <div className="flex-1 border-t border-slate-200" />
-                <span className="px-3 text-xs font-medium text-slate-400">or</span>
-                <div className="flex-1 border-t border-slate-200" />
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full h-10 border-amber-300 bg-amber-50 text-amber-800 font-medium hover:bg-amber-100 hover:border-amber-400"
-                disabled={loading}
-                onClick={handleDemoLogin}
-              >
-                <span className="mr-2">&#9733;</span>
-                Demo Login (one-click)
-              </Button>
-              <div className="text-center pt-1">
-                <Button variant="link" className="text-sm text-slate-500 hover:text-slate-700" asChild>
-                  <a href="/signup">Don&apos;t have an account? Sign up</a>
-                </Button>
-              </div>
-            </CardFooter>
-          </form>
-        </Card>
+                <div className="space-y-2">
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-medium text-slate-700"
+                  >
+                    Password
+                  </label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="h-11 border-slate-300 bg-white"
+                  />
+                </div>
+              </CardContent>
 
-        <p className="text-center text-xs text-slate-400">
-          UDS-HR v1.0 &mdash; Saudi HR & Payroll Platform
-        </p>
-      </div>
+              <CardFooter className="flex flex-col gap-3 pt-2">
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="saudi-gradient-primary h-11 w-full text-base font-semibold text-white shadow-md transition hover:shadow-lg disabled:opacity-60"
+                >
+                  {loading ? "Signing in..." : "Sign In"}
+                </Button>
+
+                <div className="relative flex w-full items-center">
+                  <div className="flex-1 border-t border-slate-200" />
+                  <span className="px-3 text-xs font-medium uppercase tracking-wider text-slate-400">
+                    or
+                  </span>
+                  <div className="flex-1 border-t border-slate-200" />
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={loading}
+                  onClick={handleDemoLogin}
+                  className="saudi-badge-premium h-11 w-full font-medium"
+                >
+                  <span className="mr-2">★</span>
+                  Try the demo (one click)
+                </Button>
+
+                <div className="pt-1 text-center text-sm text-slate-500">
+                  Don&apos;t have an account?{" "}
+                  <a
+                    href="/signup"
+                    className="font-semibold text-[hsl(var(--saudi-green))] hover:underline"
+                  >
+                    Sign up
+                  </a>
+                </div>
+              </CardFooter>
+            </form>
+          </Card>
+        </section>
+      </main>
+
+      {/* Bottom: trust strip */}
+      <footer className="relative z-10 px-6 pb-4 text-center text-xs text-white/60 sm:px-10">
+        PDPL compliant · Hosted in me-south-1 · Trusted by Saudi SMEs
+      </footer>
     </div>
   );
 }

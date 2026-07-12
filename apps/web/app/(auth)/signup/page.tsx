@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@hrms-app/ui";
 import { signupSchema } from "@hrms-app/validators";
-import { Landmark, Globe } from "lucide-react";
+import { SaudiBackdrop, SaudiFlagMark, SaudiPalmette } from "~/components/saudi/saudi-backdrop";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -13,7 +13,6 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [crNumber, setCrNumber] = useState("");
-  const [regulatoryContext, setRegulatoryContext] = useState<"saudi" | "india">("saudi");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
@@ -22,7 +21,14 @@ export default function SignupPage() {
     setLoading(true);
     setErrors({});
 
-    const result = signupSchema.safeParse({ name, email, password, companyName, crNumber, regulatoryContext });
+    const result = signupSchema.safeParse({
+      name,
+      email,
+      password,
+      companyName,
+      crNumber,
+      regulatoryContext: "saudi" as const,
+    });
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
       for (const issue of result.error.issues) {
@@ -51,111 +57,164 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-stone-100 p-4">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-1">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-amber-800 shadow-sm">
-            <span className="text-xl font-bold text-white">U</span>
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">UDS-HR</h1>
-          <p className="text-sm text-slate-500">Create your company account</p>
-        </div>
+    <div className="relative min-h-screen w-full">
+      <SaudiBackdrop variant="jeddah" dim className="absolute inset-0" />
 
-        <Card className="border border-slate-200/60 bg-white shadow-md">
-          <CardHeader className="pb-2 text-center">
-            <CardTitle className="text-lg font-semibold text-slate-900">Get started</CardTitle>
-            <CardDescription className="text-sm text-slate-500">
-              Set up your company HR account in minutes
+      <header className="relative z-10 flex items-center justify-between px-6 py-5 sm:px-10">
+        <div className="flex items-center gap-3">
+          <SaudiFlagMark className="h-7 w-auto drop-shadow-md" />
+          <span className="text-lg font-semibold tracking-tight text-white">UDS-HR</span>
+        </div>
+        <a
+          href="/login"
+          className="text-sm text-white/80 transition hover:text-white"
+        >
+          Already have an account? <span className="font-semibold">Sign in</span>
+        </a>
+      </header>
+
+      <main className="relative z-10 flex min-h-[calc(100vh-80px)] items-center justify-center px-6 py-10 sm:px-10">
+        <Card className="saudi-glass w-full max-w-2xl border-0 shadow-2xl">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[hsl(var(--saudi-green))] to-[hsl(var(--saudi-green-dark))] shadow-lg">
+              <span className="text-xl font-bold text-white">U</span>
+            </div>
+            <CardTitle className="text-2xl font-bold tracking-tight">
+              Start your company's HR
+            </CardTitle>
+            <CardDescription>
+              Set up your Saudi HR account in minutes. We'll create your
+              isolated tenant schema automatically.
             </CardDescription>
+            <SaudiPalmette className="mx-auto mt-3 h-4 w-32 text-[hsl(var(--saudi-gold))]" />
           </CardHeader>
+
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4 pt-4">
               {errors.form && (
-                <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">{errors.form}</div>
+                <div
+                  role="alert"
+                  className="rounded-lg border border-[hsl(var(--saudi-rose))]/30 bg-[hsl(var(--saudi-rose))]/10 px-4 py-3 text-sm text-[hsl(var(--saudi-rose))]"
+                >
+                  {errors.form}
+                </div>
               )}
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Regulatory Context</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setRegulatoryContext("saudi")}
-                    className={`flex flex-col items-center gap-1 rounded-lg border-2 p-3 text-center transition-colors ${
-                      regulatoryContext === "saudi"
-                        ? "border-amber-500 bg-amber-50 text-amber-800"
-                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                    }`}
-                  >
-                    <Landmark className="h-5 w-5" />
-                    <span className="text-sm font-semibold">Saudi Arabia</span>
-                    <span className="text-[10px] text-slate-500 leading-tight">Saudi labor law, GOSI, Qiwa, Nitaqat</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRegulatoryContext("india")}
-                    className={`flex flex-col items-center gap-1 rounded-lg border-2 p-3 text-center transition-colors ${
-                      regulatoryContext === "india"
-                        ? "border-blue-500 bg-blue-50 text-blue-800"
-                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                    }`}
-                  >
-                    <Globe className="h-5 w-5" />
-                    <span className="text-sm font-semibold">India</span>
-                    <span className="text-[10px] text-slate-500 leading-tight">Indian labor law, EPF, ESI</span>
-                  </button>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label htmlFor="companyName" className="block text-sm font-medium text-slate-700">
+                    Company Name
+                    <span className="ms-1 text-xs text-slate-400" dir="rtl">اسم الشركة</span>
+                  </label>
+                  <Input
+                    id="companyName"
+                    placeholder="e.g. Al-Noor Trading Co."
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    required
+                    className="h-11 border-slate-300 bg-white"
+                  />
+                  {errors.companyName && (
+                    <p className="text-xs text-[hsl(var(--saudi-rose))]">{errors.companyName}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="crNumber" className="block text-sm font-medium text-slate-700">
+                    CR Number
+                    <span className="ms-1 text-xs text-slate-400" dir="rtl">السجل التجاري</span>
+                  </label>
+                  <Input
+                    id="crNumber"
+                    placeholder="1010XXXXXX"
+                    value={crNumber}
+                    onChange={(e) => setCrNumber(e.target.value)}
+                    required
+                    className="h-11 border-slate-300 bg-white"
+                  />
+                  {errors.crNumber && (
+                    <p className="text-xs text-[hsl(var(--saudi-rose))]">{errors.crNumber}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="name" className="block text-sm font-medium text-slate-700">
+                    Your Name
+                    <span className="ms-1 text-xs text-slate-400" dir="rtl">الاسم الكامل</span>
+                  </label>
+                  <Input
+                    id="name"
+                    placeholder="HR Manager"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    className="h-11 border-slate-300 bg-white"
+                  />
+                  {errors.name && (
+                    <p className="text-xs text-[hsl(var(--saudi-rose))]">{errors.name}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="email" className="block text-sm font-medium text-slate-700">
+                    Work Email
+                  </label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@company.sa"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="h-11 border-slate-300 bg-white"
+                  />
+                  {errors.email && (
+                    <p className="text-xs text-[hsl(var(--saudi-rose))]">{errors.email}</p>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="companyName" className="text-sm font-medium text-slate-700">Company Name</label>
-                <Input id="companyName" placeholder="Your Company Ltd." value={companyName} onChange={(e) => setCompanyName(e.target.value)} required
-                  className="h-10 border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-amber-700/40" />
-                {errors.companyName && <p className="text-xs text-red-600">{errors.companyName}</p>}
+                <label htmlFor="password" className="block text-sm font-medium text-slate-700">
+                  Password
+                </label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="At least 8 characters, 1 uppercase, 1 number"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="h-11 border-slate-300 bg-white"
+                />
+                {errors.password && (
+                  <p className="text-xs text-[hsl(var(--saudi-rose))]">{errors.password}</p>
+                )}
               </div>
-              <div className="space-y-2">
-                <label htmlFor="crNumber" className="text-sm font-medium text-slate-700">CR Number</label>
-                <Input id="crNumber" placeholder="Commercial Registration number" value={crNumber} onChange={(e) => setCrNumber(e.target.value)} required
-                  className="h-10 border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-amber-700/40" />
-                {errors.crNumber && <p className="text-xs text-red-600">{errors.crNumber}</p>}
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium text-slate-700">Your Name</label>
-                <Input id="name" placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} required
-                  className="h-10 border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-amber-700/40" />
-                {errors.name && <p className="text-xs text-red-600">{errors.name}</p>}
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-slate-700">Email</label>
-                <Input id="email" type="email" placeholder="you@company.com" value={email} onChange={(e) => setEmail(e.target.value)} required
-                  className="h-10 border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-amber-700/40" />
-                {errors.email && <p className="text-xs text-red-600">{errors.email}</p>}
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium text-slate-700">Password</label>
-                <Input id="password" type="password" placeholder="Min 8 chars, 1 uppercase, 1 number" value={password} onChange={(e) => setPassword(e.target.value)} required
-                  className="h-10 border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-amber-700/40" />
-                {errors.password && <p className="text-xs text-red-600">{errors.password}</p>}
+
+              <div className="rounded-lg border border-amber-200/60 bg-amber-50/60 p-3 text-xs text-amber-900">
+                <strong>Compliance note:</strong> By creating an account, you
+                confirm your company operates under Saudi labor law. Your
+                data is hosted in AWS me-south-1 (Bahrain) under PDPL.
               </div>
             </CardContent>
+
             <CardFooter className="flex flex-col gap-3 pt-2">
-              <Button type="submit"
-                className="w-full h-10 bg-amber-800 text-white font-medium hover:bg-amber-900 active:bg-amber-950"
-                disabled={loading}>
-                {loading ? "Creating account..." : "Create Account"}
+              <Button
+                type="submit"
+                disabled={loading}
+                className="saudi-gradient-primary h-11 w-full text-base font-semibold text-white shadow-md transition hover:shadow-lg disabled:opacity-60"
+              >
+                {loading ? "Creating your company…" : "Create my company account"}
               </Button>
-              <div className="text-center pt-1">
-                <Button variant="link" className="text-sm text-slate-500 hover:text-slate-700" asChild>
-                  <a href="/login">Already have an account? Sign in</a>
-                </Button>
-              </div>
+              <p className="text-center text-xs text-slate-500">
+                A separate schema will be created in our database for your
+                company. Other companies cannot see your data.
+              </p>
             </CardFooter>
           </form>
         </Card>
-
-        <p className="text-center text-xs text-slate-400">
-          UDS-HR v1.0 &mdash; Saudi HR & Payroll Platform
-        </p>
-      </div>
+      </main>
     </div>
   );
 }

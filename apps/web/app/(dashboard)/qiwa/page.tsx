@@ -31,7 +31,7 @@ const customColors: Record<string, string> = {
 };
 
 export default function QiwaDashboardPage() {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [setActiveTab] = useState("dashboard"); 
 
   const { data: connectionStatus } = api.qiwa.testConnection.useQuery();
   const { data: dashboardData, refetch: refetchDashboard } = api.qiwa.dashboard.useQuery();

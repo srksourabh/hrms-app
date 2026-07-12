@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -10,7 +9,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createJobRequisitionSchema, jobTypeEnum } from "@hrms-app/validators";
 import type { z } from "zod";
-
 const statusColors = {
   draft: "outline",
   open: "default",
@@ -19,11 +17,9 @@ const statusColors = {
   filled: "default",
   cancelled: "destructive",
 } as const;
-
 export default function NewJobPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(createJobRequisitionSchema),
     defaultValues: {
@@ -33,11 +29,9 @@ export default function NewJobPage() {
       openings: 1,
     },
   });
-
   const departments = api.department.list.useQuery();
   const employees = api.employee.list.useQuery({});
   const createMutation = api.recruitment.jobRequisition.create.useMutation();
-
   const onSubmit = async (data: z.infer<typeof createJobRequisitionSchema>) => {
     setIsSubmitting(true);
     try {
@@ -50,7 +44,6 @@ export default function NewJobPage() {
       setIsSubmitting(false);
     }
   };
-
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-4xl">
       <div className="flex items-center gap-4">
@@ -67,7 +60,6 @@ export default function NewJobPage() {
           </Button>
         </div>
       </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Basic Information</CardTitle>
@@ -93,7 +85,6 @@ export default function NewJobPage() {
               </Select>
             </div>
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="type">Job Type *</Label>
             <Select {...register("type")}>
@@ -108,7 +99,6 @@ export default function NewJobPage() {
             </Select>
             {errors.type && <p className="text-sm text-destructive">{errors.type.message}</p>}
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="hiringManagerId">Hiring Manager</Label>
             <Select {...register("hiringManagerId")}>
@@ -122,7 +112,6 @@ export default function NewJobPage() {
               </SelectContent>
             </Select>
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="recruiterId">Recruiter</Label>
             <Select {...register("recruiterId")}>
@@ -136,13 +125,11 @@ export default function NewJobPage() {
               </SelectContent>
             </Select>
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="description">Description *</Label>
             <Textarea id="description" {...register("description")} rows={4} placeholder="Describe the role, team, and impact..." />
             {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
           </div>
-
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="requirements">Requirements</Label>
@@ -153,7 +140,6 @@ export default function NewJobPage() {
               <Textarea id="responsibilities" {...register("responsibilities")} rows={4} placeholder="Key responsibilities and duties..." />
             </div>
           </div>
-
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="location">Location</Label>
@@ -171,7 +157,6 @@ export default function NewJobPage() {
               <Input id="openings" type="number" min="1" {...register("openings", { valueAsNumber: true })} />
             </div>
           </div>
-
           <div className="grid gap-4 md:grid-cols-4">
             <div className="space-y-2">
               <Label htmlFor="minSalary">Min Salary (SAR)</Label>

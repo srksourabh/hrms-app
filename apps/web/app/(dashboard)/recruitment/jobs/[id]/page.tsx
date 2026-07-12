@@ -1,5 +1,4 @@
 "use client";
-
 import { use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -12,8 +11,6 @@ const statusColors: Record<string, "default" | "destructive" | "secondary" | "ou
   closed: "secondary",
   on_hold: "outline",
 };
-
-
 const statusLabels: Record<string, string> = {
   draft: "Draft",
   open: "Open",
@@ -22,19 +19,15 @@ const statusLabels: Record<string, string> = {
   filled: "Filled",
   cancelled: "Cancelled",
 };
-
 export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { id } = use(params);
-
   const { data: job, isLoading } = api.recruitment.jobRequisition.getById.useQuery(id);
   const deleteMutation = api.recruitment.jobRequisition.delete.useMutation();
   const postMutation = api.recruitment.jobRequisition.post.useMutation();
   const closeMutation = api.recruitment.jobRequisition.close.useMutation();
-
   if (isLoading) return <div className="flex items-center justify-center h-64">Loading...</div>;
   if (!job) return <div className="flex items-center justify-center h-64">Job not found</div>;
-
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -66,7 +59,6 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           )}
         </div>
       </div>
-
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="md:col-span-2">
           <CardHeader>
@@ -91,7 +83,6 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             )}
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader>
             <CardTitle>Details</CardTitle>
@@ -144,7 +135,6 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           </CardContent>
         </Card>
       </div>
-
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Applications ({job.applications?.length ?? 0})</CardTitle>
