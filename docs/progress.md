@@ -2,12 +2,14 @@
 
 ## Current milestone: Production-ready MVP complete
 
-### Build Status
-- [x] Build passes (`pnpm build`)
-- [x] TypeScript typecheck passes (`pnpm typecheck`)
+### Build Status (verified 2026-07-12 by Hermes)
+- [x] Build passes (`pnpm build`) — 2/2 turbo tasks, ~60s
+- [x] TypeScript typecheck passes (`pnpm typecheck`) — 13/13 turbo tasks
 - [x] All 63 unit tests pass (`pnpm test`)
 - [x] Demo login working: admin@demo.com / Demo@1234 → redirects to /employees
 - [x] Vercel deployment: https://hrms-app-chi.vercel.app/
+
+> **Hermes correction (2026-07-12):** `progress.md` previously claimed `pnpm build` and `pnpm typecheck` passed. That was **false** as of session start. The web app had 3 TypeScript errors in `apps/web/trpc/routers/qiwa.ts` (lines 192, 327 — type narrowing on `Date | string` and missing required fields on `QiwaContract`). Both errors are now fixed; build, typecheck, and tests verified green. See the `qiwa.ts` history for the exact diff.
 
 ### PRD v5.0 Implementation Status
 
@@ -21,7 +23,7 @@
 - [x] Document management (1.7)
 - [x] Consistency guardrail (1.8)
 - [x] Leave management (1.9)
-- [x] Hijri/Gregorian display (1.10) - **COMPLETE** (integrated into onboarding page)
+- [ ] Hijri/Gregorian display (1.10) - **PARTIAL**: `@hrms-app/date` package built with 14 passing tests, but ZERO pages in `apps/web` import it (verified 2026-07-12). Acceptance criterion "WHEN any date is displayed, THE SYSTEM SHALL show both Hijri and Gregorian formats" is unmet until UI integration ships.
 - [x] RBAC + login system (1.11)
 - [x] Company setup wizard (1.12)
 - [x] Employee self-service (1.13)
@@ -40,7 +42,7 @@
 - [ ] Interview scheduling (2.5) - NOT IMPLEMENTED
 - [ ] AI interview assistant (2.6) - NOT IMPLEMENTED
 - [ ] Offer letter generation (2.7) - NOT IMPLEMENTED
-- [x] Onboarding workflows (2.8) - **COMPLETE** (Hijri dates integrated)
+- [x] Onboarding workflows (2.8) - **COMPLETE** (page exists; Hijri dates NOT yet integrated, see 1.10)
 - [ ] AI onboarding copilot (2.9) - NOT IMPLEMENTED
 - [x] Offboarding workflows (2.10) - **DATA MODEL EXISTS, PAGE NOT IMPLEMENTED**
 
@@ -92,17 +94,12 @@
 
 ### Remaining Work
 
-1. **Lint errors (~228 errors)** - Pre-existing `any` types and unused imports in scaffolding pages. These are in work-in-progress pages and don't affect production build.
-
-2. **PRD document (docs/02-prd.md)** - Truncated to 49 lines, needs full content from the v5.0 document.
-
-3. **Hijri date display** - UI components exist in `packages/date` but not integrated into pages.
-
-4. **Government API integrations** - Qiwa, Mudad, GOSI, Muqeem not implemented.
-
+1. **PRD document (docs/02-prd.md)** - Truncated to 49 lines, needs full v5.0 content (the file in `Downloads/UDS-HR-PRD-v5.0.md` is the source of truth).
+2. **Hijri date UI integration** - `@hrms-app/date` package works and is tested, but no pages import it. Needs a `<HijriDate>` component or wrapper integrated into employee profile, payroll run, leave request screens (5 representative screens per Section 11 acceptance).
+3. **Lint status unknown** - `pnpm lint` fails on `@hrms-app/qiwa` (missing ESLint v9 flat config) and other packages have not been re-measured since the 2026-07-12 fixes. The "228 errors" figure from before is unverified.
+4. **Government API integrations** - Qiwa, Mudad, GOSI, Muqeem not implemented (Qiwa stub exists in `packages/qiwa` + `apps/web/trpc/routers/qiwa.ts`, but is non-functional without credentials).
 5. **AI functionality** - Only data model and scaffolding pages exist; no actual AI features implemented.
-
-6. **Phase 2-5 features** - Most features beyond core HR/payroll are not implemented.
+6. **Phase 2-5 features** - Most features beyond core HR/payroll are not implemented. The web app DOES have many route files scaffolded under `/recruitment/*` and `/retention/*` that need to be audited (routers vs pages vs stubs).
 
 ### Knowledge files
 - [x] CLAUDE.md
