@@ -1,12 +1,32 @@
+# Dependencies
 node_modules
+**/node_modules
+
+# Build outputs and caches
 .next
+**/.next
 .turbo
-.git
-.env
-.env.local
-*.log
-coverage
+**/.turbo
 dist
+**/dist
+coverage
+**/coverage
+.drizzle
+**/.drizzle
+
+# Vercel local state / pulled env
+.vercel
+.vercel/**
+
+# Git and local-only files
+.git
+.git/**
+.env
+.env.*
+*.log
+
+# Test artifacts
 playwright-report
 test-results
-.drizzle
+**/playwright-report
+**/test-results
