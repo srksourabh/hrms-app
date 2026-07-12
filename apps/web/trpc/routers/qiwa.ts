@@ -105,7 +105,7 @@ interface QiwaAuthResponse {
 
 class QiwaApiClient {
   private accessToken: string | null = null;
-  private tokenExpiry: number = 0;
+  private tokenExpiry = 0;
 
   constructor(private config: QiwaApiConfig) {}
 

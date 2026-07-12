@@ -38,4 +38,16 @@ test.describe("Authentication flow", () => {
     await expect(page.getByRole("link", { name: "Sign In" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Get Started" })).toBeVisible();
   });
+
+  test("demo login redirects to dashboard", async ({ page }) => {
+    await page.goto("/login");
+    // The "Demo Login (one-click)" button auto-fills admin@demo.com / Demo@1234 and submits.
+    // It uses next-auth redirect:true with callbackUrl="/", so the page navigates.
+    await page.getByRole("button", { name: /Demo Login/i }).click();
+    // After successful demo login the user is sent to "/", which the middleware
+    // routes to the employee list. Wait for either of those to appear.
+    await page.waitForURL(/\/(employees|dashboard|$)/, { timeout: 10_000 });
+    // Smoke check: confirm we are no longer on /login.
+    expect(page.url()).not.toContain("/login");
+  });
 });

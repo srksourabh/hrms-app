@@ -2,7 +2,7 @@
 
 import { api } from "~/trpc/react";
 import { useRouter } from "next/navigation";
-import { Button, Card, CardHeader, CardTitle, CardContent, Input } from "@hrms-app/ui";
+import { Button, Card, CardHeader, CardTitle, CardContent, Input, DualDate } from "@hrms-app/ui";
 import { useState } from "react";
 
 export default function NewLeaveRequestPage() {
@@ -86,10 +86,20 @@ export default function NewLeaveRequestPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Start Date</label>
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+              {startDate && (
+                <p className="text-xs text-muted-foreground">
+                  <DualDate date={startDate} locale="ar" />
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">End Date</label>
               <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+              {endDate && (
+                <p className="text-xs text-muted-foreground">
+                  <DualDate date={endDate} locale="ar" />
+                </p>
+              )}
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
             <div className="flex gap-2 pt-2">

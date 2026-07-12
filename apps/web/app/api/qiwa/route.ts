@@ -12,7 +12,7 @@ const QIWA_CONFIG = {
 };
 
 let cachedToken: string | null = null;
-let tokenExpiry: number = 0;
+let tokenExpiry = 0;
 
 async function getAccessToken(): Promise<string> {
   if (cachedToken && Date.now() < tokenExpiry) {

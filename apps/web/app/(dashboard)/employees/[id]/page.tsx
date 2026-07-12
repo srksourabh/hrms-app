@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Button, Card, CardHeader, CardTitle, CardContent, Badge } from "@hrms-app/ui";
+import { Button, Card, CardHeader, CardTitle, CardContent, Badge, DualDate } from "@hrms-app/ui";
 import { api } from "~/trpc/react";
 import { ArrowLeft, Edit, FileText, CalendarCheck } from "lucide-react";
 
@@ -90,7 +90,9 @@ export default function EmployeeDetailPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Hire Date</span>
-              <span className="font-medium">{employee.hireDate}</span>
+              <span className="font-medium">
+                {employee.hireDate ? <DualDate date={employee.hireDate} locale="ar" /> : "—"}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">GOSI System</span>
@@ -99,7 +101,9 @@ export default function EmployeeDetailPage() {
             {employee.gosiRegistrationDate && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">GOSI Reg. Date</span>
-                <span className="font-medium">{employee.gosiRegistrationDate}</span>
+                <span className="font-medium">
+                  <DualDate date={employee.gosiRegistrationDate} locale="ar" />
+                </span>
               </div>
             )}
           </CardContent>
@@ -162,7 +166,8 @@ export default function EmployeeDetailPage() {
                 <div key={lr.id} className="flex items-center justify-between rounded-md border p-3">
                   <div>
                     <p className="text-sm font-medium">
-                      {lr.startDate} &rarr; {lr.endDate}
+                      {lr.startDate ? <DualDate date={lr.startDate} locale="ar" /> : "—"} &rarr;{" "}
+                      {lr.endDate ? <DualDate date={lr.endDate} locale="ar" /> : "—"}
                     </p>
                     <p className="text-xs text-muted-foreground">{lr.leaveType?.name ?? "Leave"}</p>
                   </div>

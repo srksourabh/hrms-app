@@ -107,7 +107,7 @@ export interface QiwaApiClient {
 
 export class QiwaApiClientImpl implements QiwaApiClient {
   private accessToken: string | null = null;
-  private tokenExpiry: number = 0;
+  private tokenExpiry = 0;
 
   constructor(private config: QiwaApiConfig) {}
 
@@ -245,7 +245,7 @@ export class QiwaApiClientImpl implements QiwaApiClient {
     }
 
     const data = await response.json();
-    return (data.employees ?? data).map((emp: any) => qiwaEmployeeSchema.parse(emp));
+    return (data.employees ?? data).map((emp: unknown) => qiwaEmployeeSchema.parse(emp));
   }
 
   async testConnectivity(): Promise<boolean> {

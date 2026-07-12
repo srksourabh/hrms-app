@@ -1,7 +1,7 @@
 "use client";
 
 import { api } from "~/trpc/react";
-import { Button, Badge } from "@hrms-app/ui";
+import { Button, Badge, DualDate } from "@hrms-app/ui";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 
@@ -47,7 +47,9 @@ export default function PayrollPage() {
               const badge = statusBadge[run.status as keyof typeof statusBadge] ?? statusBadge.draft;
               return (
                 <tr key={run.id} className="border-b hover:bg-muted/50">
-                  <td className="p-4 align-middle">{run.periodMonth}</td>
+                  <td className="p-4 align-middle">
+                    {run.periodMonth ? <DualDate date={run.periodMonth} locale="en" /> : "—"}
+                  </td>
                   <td className="p-4 align-middle">
                     <Badge variant={badge!.variant} className={badge!.className}>
                       {run.status.replace("_", " ")}

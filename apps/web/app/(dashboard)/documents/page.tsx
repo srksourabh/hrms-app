@@ -2,7 +2,7 @@
 
 import { api } from "~/trpc/react";
 import { useState } from "react";
-import { Button, Badge } from "@hrms-app/ui";
+import { Button, Badge, DualDate } from "@hrms-app/ui";
 import { Upload, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
 
@@ -103,7 +103,9 @@ export default function DocumentsPage() {
                   <td className="p-4 align-middle">{doc.employee?.fullName}</td>
                   <td className="p-4 align-middle capitalize">{doc.type.replace("_", " ")}</td>
                   <td className="p-4 align-middle">{doc.fileName}</td>
-                  <td className="p-4 align-middle">{doc.expiryDate ?? "—"}</td>
+                  <td className="p-4 align-middle">
+                    {doc.expiryDate ? <DualDate date={doc.expiryDate} locale="ar" /> : "—"}
+                  </td>
                   <td className="p-4 align-middle">
                     <Badge variant="outline" className={expiry.className}>
                       {expiry.label}
