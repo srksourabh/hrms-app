@@ -18,13 +18,14 @@
     "test": "vitest"
   },
   "dependencies": {
-    "drizzle-orm": "^0.38.0",
     "drizzle-kit": "^0.30.0",
+    "drizzle-orm": "^0.38.0",
     "postgres": "^3.4.0"
   },
   "devDependencies": {
-    "@hrms-app/typescript-config": "workspace:*",
     "@hrms-app/eslint-config": "workspace:*",
+    "@hrms-app/typescript-config": "workspace:*",
+    "tsx": "^4.23.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"
   }
