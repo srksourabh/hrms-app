@@ -6,6 +6,40 @@ import { Button, Card, CardHeader, CardTitle, CardContent, Badge, Table, TableHe
 import { api } from "~/trpc/react";
 import { Plus, Search, Calendar, Clock, CheckCircle, AlertCircle, FileText, Users, Filter } from "lucide-react";
 
+const HIJRI_MONTHS_AR = [
+  "محرم", "صفر", "ربيع الأول", "ربيع الثاني", "جمادى الأولى", "جمادى الآخرة",
+  "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة"
+];
+
+function gregorianToHijri(date: Date): string {
+  const d = new Date(date);
+  const hijri = new Date(d.getFullYear(), 0, 1);
+  hijri.setFullYear(d.getFullYear(), 0, 1);
+  const islamicEpoch = 1948439.5;
+  const days = Math.floor((d.getTime() / 86400000) - islamicEpoch + 1);
+  const year = Math.floor((30 * days + 10646) / 10631);
+  const dayOfYear = days - Math.floor((29 + 11 * year) / 30) - 354 * (year - 1);
+  let month = Math.ceil(dayOfYear / 29.5);
+  if (month < 1) month = 1;
+  if (month > 12) month = 12;
+  const day = dayOfYear - Math.floor(29.5 * (month - 1));
+  const hijriMonth = HIJRI_MONTHS_AR[month - 1];
+  return `${day} ${hijriMonth} ${year} هـ`;
+}
+
+function formatDualDate(dateStr: string): string {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  const greg = date.toLocaleDateString('ar-SA', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+  const hijri = gregorianToHijri(date);
+  return `${greg} | ${hijri}`;
+}
+
 const statusColors: Record<string, "default" | "destructive" | "secondary" | "outline"> = {
   not_started: "outline",
   in_progress: "secondary",
@@ -147,6 +181,10 @@ function OnboardingTable({ data, isLoading, page, setPage, pageSize, statusFilte
     return new Date(item.dueDate) < new Date() && item.status !== "completed";
   };
 
+  const formatDueDate = (item: any) => {
+    return formatDualDate(item.dueDate);
+  };
+
   return (
     <Card>
       <CardContent className="p-0">
@@ -186,7 +224,7 @@ function OnboardingTable({ data, isLoading, page, setPage, pageSize, statusFilte
                     <Badge variant="outline">{dayLabels[plan.dayNumber] ?? `Day ${plan.dayNumber}`}</Badge>
                   </TableCell>
                   <TableCell className={isOverdue(plan) && plan.status !== "completed" ? "text-destructive font-medium" : ""}>
-                    {plan.dueDate ? new Date(plan.dueDate).toLocaleDateString() : "-"}
+                    {formatDueDate(plan)}
                   </TableCell>
                   <TableCell>{plan.assignedTo?.fullName ?? "-"}</TableCell>
                   <TableCell>
