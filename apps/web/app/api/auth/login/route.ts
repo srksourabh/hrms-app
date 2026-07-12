@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (e) {
-    console.error("Login error:", e);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error("Login error:", e, (e as any)?.stack);
+    return NextResponse.json({ error: "Internal server error", details: String(e), stack: (e as any)?.stack ?? "" }, { status: 500 });
   }
 }
