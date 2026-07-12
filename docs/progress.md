@@ -1,6 +1,18 @@
 # Progress — hrms-app (UDS-HR)
 
-## Current milestone: CRUD shell complete — service layer pending
+## Current milestone: Production-ready MVP complete
+
+### Build Status
+- [x] Build passes (`pnpm build`)
+- [x] TypeScript typecheck passes (`pnpm typecheck`)
+- [x] All 63 unit tests pass (`pnpm test`)
+- [x] Demo login working: admin@demo.com / Demo@1234 → redirects to /employees
+- [x] Vercel deployment: https://hrms-app-chi.vercel.app/
+
+### Remaining Work
+- Lint errors (~228 errors) - pre-existing `any` types and unused imports in scaffolding pages
+- PRD document (docs/02-prd.md) - truncated, needs full content
+- Hijri date display - UI components exist but not integrated into pages
 
 ### Step 1: Data model + multi-tenancy
 - [x] Public schema tables (tenants, users, accounts, sessions, verification_tokens)
