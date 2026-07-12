@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../server";
 import { schema } from "@hrms-app/db";

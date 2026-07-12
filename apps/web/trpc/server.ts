@@ -2,7 +2,7 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 import { auth } from "@hrms-app/auth";
-import { adminDb, getTenantDb } from "@hrms-app/db";
+import { adminDb, getTenantDb, tenants } from "@hrms-app/db";
 
 
 
@@ -10,9 +10,10 @@ export async function createTRPCContext(opts: { headers: Headers }) {
   const session = await auth();
   let tenantDb = undefined;
 
-  if (session?.user?.tenantId) {
+  const tenantId = session?.user?.tenantId;
+  if (tenantId) {
     const tenant = await adminDb.query.tenants.findFirst({
-      where: (tenants, { eq }) => eq(tenants.id, session.user.tenantId),
+      where: (tenants, { eq }) => eq(tenants.id, tenantId),
     });
     if (tenant) {
       tenantDb = getTenantDb(tenant.schemaName);

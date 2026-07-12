@@ -18,7 +18,7 @@ export default async function DashboardLayout({
   let regulatoryContext: "saudi" | "india" = "saudi";
   try {
     const tenant = await adminDb.query.tenants.findFirst({
-      where: eq(tenants.id, session.user.tenantId),
+      where: eq(tenants.id, session.user.tenantId!),
     });
     if (tenant?.regulatoryContext) {
       regulatoryContext = tenant.regulatoryContext as "saudi" | "india";

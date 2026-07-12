@@ -4,6 +4,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { useRegulatoryContext } from "~/lib/regulatory-context";
 import { t } from "~/lib/i18n";
 import { Globe } from "lucide-react";
+import Link from "next/link";
 
 interface HeaderProps {
   user: {
@@ -51,11 +52,11 @@ export function Header({ user }: HeaderProps) {
           <DropdownMenuLabel className="px-3 py-2 text-xs font-medium text-slate-500">{user.email ?? ""}</DropdownMenuLabel>
           <DropdownMenuSeparator className="mx-2" />
           <DropdownMenuItem asChild className="rounded-lg text-sm text-slate-700 focus:bg-slate-100 focus:text-slate-900">
-            <a href="/settings">{t("nav.settings", lang)}</a>
+            <Link href="/settings">{t("nav.settings", lang)}</Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator className="mx-2" />
           <DropdownMenuItem asChild className="rounded-lg text-sm text-red-600 focus:bg-red-50 focus:text-red-700">
-            <a href="/api/auth/signout">{t("nav.signOut", lang)}</a>
+            <Link href="/api/auth/signout">{t("nav.signOut", lang)}</Link>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

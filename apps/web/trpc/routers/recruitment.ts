@@ -231,9 +231,9 @@ export const recruitmentRouter = createTRPCRouter({
         if (input?.candidateId) conditions.push(eq(schema.tenant.applications.candidateId, input.candidateId));
         if (input?.status) conditions.push(eq(schema.tenant.applications.status, input.status));
 
-        if (ctx.user.role === "employee") {
+if (ctx.user.role === "employee") {
           const user = await ctx.adminDb.query.users.findFirst({
-            where: (users, { eq }) => eq(users.id, ctx.user.id),
+            where: (users, { eq }) => eq(users.id, ctx.user.id!),
           });
           if (user?.employeeId) {
             conditions.push(eq(schema.tenant.applications.referrerEmployeeId, user.employeeId));
@@ -320,9 +320,9 @@ export const recruitmentRouter = createTRPCRouter({
         return application;
       }),
 
-    myApplications: protectedProcedure.query(async ({ ctx }) => {
+myApplications: protectedProcedure.query(async ({ ctx }) => {
       const user = await ctx.adminDb.query.users.findFirst({
-        where: (users, { eq }) => eq(users.id, ctx.user.id),
+        where: (users, { eq }) => eq(users.id, ctx.user.id!),
       });
       if (!user?.employeeId) return [];
 
@@ -412,9 +412,9 @@ export const recruitmentRouter = createTRPCRouter({
         return { success: true };
       }),
 
-    myInterviews: protectedProcedure.query(async ({ ctx }) => {
+myInterviews: protectedProcedure.query(async ({ ctx }) => {
       const user = await ctx.adminDb.query.users.findFirst({
-        where: (users, { eq }) => eq(users.id, ctx.user.id),
+        where: (users, { eq }) => eq(users.id, ctx.user.id!),
       });
       if (!user?.employeeId) return [];
 
@@ -668,9 +668,9 @@ export const recruitmentRouter = createTRPCRouter({
         return referral;
       }),
 
-    myReferrals: protectedProcedure.query(async ({ ctx }) => {
+myReferrals: protectedProcedure.query(async ({ ctx }) => {
       const user = await ctx.adminDb.query.users.findFirst({
-        where: (users, { eq }) => eq(users.id, ctx.user.id),
+        where: (users, { eq }) => eq(users.id, ctx.user.id!),
       });
       if (!user?.employeeId) return [];
 

@@ -100,7 +100,7 @@ export const leaveRouter = createTRPCRouter({
 
         if (ctx.user.role === "employee") {
           const user = await ctx.adminDb.query.users.findFirst({
-            where: (users, { eq }) => eq(users.id, ctx.user.id),
+            where: (users, { eq }) => eq(users.id, ctx.user.id!),
           });
           if (user?.employeeId) {
             conditions.push(eq(schema.tenant.leaveRequests.employeeId, user.employeeId));
@@ -144,7 +144,7 @@ export const leaveRouter = createTRPCRouter({
 
     my: protectedProcedure.query(async ({ ctx }) => {
       const user = await ctx.adminDb.query.users.findFirst({
-        where: (users, { eq }) => eq(users.id, ctx.user.id),
+        where: (users, { eq }) => eq(users.id, ctx.user.id!),
       });
       if (!user?.employeeId) return [];
       return await ctx.db.query.leaveRequests.findMany({

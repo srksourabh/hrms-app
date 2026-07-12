@@ -5,6 +5,8 @@ import { users, tenants } from "@hrms-app/db";
 import { compare } from "bcryptjs";
 import { eq } from "drizzle-orm";
 
+type AuthResult = ReturnType<typeof NextAuth>;
+
 declare module "next-auth" {
   interface User {
     role?: string;
@@ -31,7 +33,7 @@ declare module "next-auth" {
   }
 }
 
-const nextAuthResult = NextAuth({
+const nextAuthResult: AuthResult = NextAuth({
   trustHost: true,
   logger: {
     error(error) {
@@ -106,4 +108,7 @@ const nextAuthResult = NextAuth({
   },
 });
 
-export const { handlers, signIn, signOut, auth } = nextAuthResult;
+export const handlers = nextAuthResult.handlers;
+export const signIn = nextAuthResult.signIn as (options: { redirect: boolean; callbackUrl?: string }) => Promise<void>;
+export const signOut = nextAuthResult.signOut as (options: { redirect: boolean; callbackUrl?: string }) => Promise<void>;
+export const auth = nextAuthResult.auth as () => Promise<DefaultSession | null>;

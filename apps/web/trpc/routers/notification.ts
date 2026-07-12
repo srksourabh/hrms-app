@@ -14,7 +14,7 @@ export const notificationRouter = createTRPCRouter({
         .default({})
     )
     .query(async ({ ctx, input }) => {
-      const conditions = [eq(schema.tenant.notifications.userId, ctx.user.id)];
+      const conditions = [eq(schema.tenant.notifications.userId, ctx.user.id!)];
       if (input?.read !== undefined) {
         conditions.push(eq(schema.tenant.notifications.read, input.read));
       }
@@ -29,7 +29,7 @@ export const notificationRouter = createTRPCRouter({
       .update(schema.tenant.notifications)
       .set({ read: true })
       .where(
-        and(eq(schema.tenant.notifications.id, input), eq(schema.tenant.notifications.userId, ctx.user.id))
+        and(eq(schema.tenant.notifications.id, input), eq(schema.tenant.notifications.userId, ctx.user.id!))
       )
       .returning();
     return notification;
@@ -39,7 +39,7 @@ export const notificationRouter = createTRPCRouter({
     await ctx.db
       .update(schema.tenant.notifications)
       .set({ read: true })
-      .where(eq(schema.tenant.notifications.userId, ctx.user.id));
+      .where(eq(schema.tenant.notifications.userId, ctx.user.id!));
     return { success: true };
   }),
 
@@ -49,7 +49,7 @@ export const notificationRouter = createTRPCRouter({
       .from(schema.tenant.notifications)
       .where(
         and(
-          eq(schema.tenant.notifications.userId, ctx.user.id),
+          eq(schema.tenant.notifications.userId, ctx.user.id!),
           eq(schema.tenant.notifications.read, false)
         )
       );

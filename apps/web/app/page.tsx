@@ -4,12 +4,10 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { DashboardShell } from "~/components/dashboard-shell";
-import { useRegulatoryContext } from "~/lib/regulatory-context";
 
 export default function RootPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { regulatoryContext, preferredLanguage: lang } = useRegulatoryContext();
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -28,15 +26,15 @@ export default function RootPage() {
   return (
     <DashboardShell
       user={session.user}
-      regulatoryContext={regulatoryContext as "saudi" | "india"}
+      regulatoryContext={session.user.regulatoryContext ?? "saudi"}
       preferredLanguage={session.user.preferredLanguage ?? "en"}
     >
-      <DashboardContent regulatoryContext={regulatoryContext} lang={lang} />
+      <DashboardContent />
     </DashboardShell>
   );
 }
 
-function DashboardContent({ regulatoryContext, lang }: { regulatoryContext: string; lang: string }) {
+function DashboardContent() {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
