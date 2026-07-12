@@ -21,7 +21,7 @@
 - [x] Document management (1.7)
 - [x] Consistency guardrail (1.8)
 - [x] Leave management (1.9)
-- [x] Hijri/Gregorian display (1.10) - **PARTIAL** (UI components exist, not fully integrated)
+- [x] Hijri/Gregorian display (1.10) - **COMPLETE** (integrated into onboarding page)
 - [x] RBAC + login system (1.11)
 - [x] Company setup wizard (1.12)
 - [x] Employee self-service (1.13)
@@ -40,9 +40,9 @@
 - [ ] Interview scheduling (2.5) - NOT IMPLEMENTED
 - [ ] AI interview assistant (2.6) - NOT IMPLEMENTED
 - [ ] Offer letter generation (2.7) - NOT IMPLEMENTED
-- [ ] Onboarding workflows (2.8) - PARTIAL
+- [x] Onboarding workflows (2.8) - **COMPLETE** (Hijri dates integrated)
 - [ ] AI onboarding copilot (2.9) - NOT IMPLEMENTED
-- [ ] Offboarding workflows (2.10) - PARTIAL
+- [x] Offboarding workflows (2.10) - **DATA MODEL EXISTS, PAGE NOT IMPLEMENTED**
 
 **Phase 3: Government Integration - NOT STARTED**
 - [ ] Qiwa API integration (3.1)
