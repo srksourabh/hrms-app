@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./rbac": "./src/rbac.ts",
+    "./demo-identities": "./src/demo-identities.ts"
   },
   "scripts": {
     "lint": "eslint .",

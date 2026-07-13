@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "../server";
+import { createTRPCRouter, companyProcedure } from "../server";
 import { schema } from "@hrms-app/db";
 import {
   aiAssistantSchema, aiAssistantUpdateSchema,
@@ -15,14 +15,14 @@ import { and, eq, desc, ilike } from "drizzle-orm";
 
 export const aiRouter = createTRPCRouter({
   assistant: createTRPCRouter({
-    list: protectedProcedure
+    list: companyProcedure
       .query(async ({ ctx }) => {
         return await ctx.db.query.aiAssistants.findMany({
           orderBy: desc(schema.tenant.aiAssistants.createdAt),
         });
       }),
 
-    getById: protectedProcedure
+    getById: companyProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
         return await ctx.db.query.aiAssistants.findFirst({
@@ -30,14 +30,14 @@ export const aiRouter = createTRPCRouter({
         });
       }),
 
-    create: protectedProcedure
+    create: companyProcedure
       .input(aiAssistantSchema)
       .mutation(async ({ ctx, input }) => {
         const [result] = await ctx.db.insert(schema.tenant.aiAssistants).values(input).returning();
         return result;
       }),
 
-    update: protectedProcedure
+    update: companyProcedure
       .input(z.object({ id: idSchema, data: aiAssistantUpdateSchema }))
       .mutation(async ({ ctx, input }) => {
         const [result] = await ctx.db.update(schema.tenant.aiAssistants)
@@ -47,7 +47,7 @@ export const aiRouter = createTRPCRouter({
         return result;
       }),
 
-    delete: protectedProcedure
+    delete: companyProcedure
       .input(idSchema)
       .mutation(async ({ ctx, input }) => {
         await ctx.db.delete(schema.tenant.aiAssistants)
@@ -56,7 +56,7 @@ export const aiRouter = createTRPCRouter({
   }),
 
   suggestion: createTRPCRouter({
-    list: protectedProcedure
+    list: companyProcedure
       .input(aiSuggestionQuerySchema.optional().default({}))
       .query(async ({ ctx, input }) => {
         const conditions = [];
@@ -82,7 +82,7 @@ export const aiRouter = createTRPCRouter({
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
 
-    getById: protectedProcedure
+    getById: companyProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
         return await ctx.db.query.aiSuggestions.findFirst({
@@ -91,14 +91,14 @@ export const aiRouter = createTRPCRouter({
         });
       }),
 
-    create: protectedProcedure
+    create: companyProcedure
       .input(aiSuggestionSchema)
       .mutation(async ({ ctx, input }) => {
         const [result] = await ctx.db.insert(schema.tenant.aiSuggestions).values(input).returning();
         return result;
       }),
 
-    update: protectedProcedure
+    update: companyProcedure
       .input(z.object({ id: idSchema, data: aiSuggestionUpdateSchema }))
       .mutation(async ({ ctx, input }) => {
         const [result] = await ctx.db.update(schema.tenant.aiSuggestions)
@@ -110,7 +110,7 @@ export const aiRouter = createTRPCRouter({
   }),
 
   churnPrediction: createTRPCRouter({
-    list: protectedProcedure
+    list: companyProcedure
       .input(aiChurnPredictionQuerySchema.optional().default({}))
       .query(async ({ ctx, input }) => {
         const conditions = [];
@@ -134,7 +134,7 @@ export const aiRouter = createTRPCRouter({
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
 
-    getById: protectedProcedure
+    getById: companyProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
         return await ctx.db.query.aiChurnPredictions.findFirst({
@@ -145,7 +145,7 @@ export const aiRouter = createTRPCRouter({
   }),
 
   skillRecommendation: createTRPCRouter({
-    list: protectedProcedure
+    list: companyProcedure
       .input(aiSkillRecommendationQuerySchema.optional().default({}))
       .query(async ({ ctx, input }) => {
         const conditions = [];
@@ -169,7 +169,7 @@ export const aiRouter = createTRPCRouter({
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
 
-    getById: protectedProcedure
+    getById: companyProcedure
       .input(idSchema)
       .query(async ({ ctx, input }) => {
         return await ctx.db.query.aiSkillRecommendations.findFirst({
@@ -180,7 +180,7 @@ export const aiRouter = createTRPCRouter({
   }),
 
   compliancePrediction: createTRPCRouter({
-    list: protectedProcedure
+    list: companyProcedure
       .input(aiCompliancePredictionQuerySchema.optional().default({}))
       .query(async ({ ctx, input }) => {
         const conditions = [];
@@ -208,7 +208,7 @@ export const aiRouter = createTRPCRouter({
   }),
 
   salaryBenchmark: createTRPCRouter({
-    list: protectedProcedure
+    list: companyProcedure
       .input(aiSalaryBenchmarkQuerySchema.optional().default({}))
       .query(async ({ ctx, input }) => {
         const conditions = [];
@@ -234,7 +234,7 @@ export const aiRouter = createTRPCRouter({
   }),
 
   auditLog: createTRPCRouter({
-    list: protectedProcedure
+    list: companyProcedure
       .input(aiAuditLogQuerySchema.optional().default({}))
       .query(async ({ ctx, input }) => {
         const conditions = [];

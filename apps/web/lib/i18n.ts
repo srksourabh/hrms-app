@@ -1,6 +1,6 @@
 export const translations = {
   en: {
-    app: { name: "UDS-HR", tagline: "Saudi HR & Payroll Platform" },
+    app: { name: "Taāzur", tagline: "Saudi HR & Payroll Platform" },
     nav: {
       dashboard: "Dashboard",
       employees: "Employees",
@@ -97,7 +97,7 @@ export const translations = {
     },
   },
   ar: {
-    app: { name: "يو دي إس-إتش آر", tagline: "منصة الموارد البشرية والرواتب السعودية" },
+    app: { name: "تآزر", tagline: "منصة الموارد البشرية والرواتب السعودية" },
     nav: {
       dashboard: "لوحة التحكم",
       employees: "الموظفون",

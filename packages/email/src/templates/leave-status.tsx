@@ -9,6 +9,7 @@ import {
   Button,
   Hr,
 } from "@react-email/components";
+import { productBrand } from "@hrms-app/config/brand";
 
 interface LeaveStatusEmailProps {
   employeeName: string;
@@ -18,7 +19,7 @@ interface LeaveStatusEmailProps {
   status: "approved" | "rejected";
   reason?: string;
   dashboardUrl: string;
-  appName: string;
+  appName?: string;
 }
 
 const styles = {
@@ -148,7 +149,7 @@ export function LeaveStatusEmail({
   status,
   reason,
   dashboardUrl,
-  appName,
+  appName = productBrand.name,
 }: LeaveStatusEmailProps) {
   const isApproved = status === "approved";
 

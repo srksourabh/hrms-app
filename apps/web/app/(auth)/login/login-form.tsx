@@ -3,6 +3,26 @@
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { productBrand } from "@hrms-app/config/brand";
+import {
+  demoIdentities,
+  type DemoIdentity,
+  type DemoIdentityKey,
+} from "@hrms-app/auth/demo-identities";
+import { BrandMark } from "~/components/brand/brand-lockup";
+
+const demoOptions: readonly {
+  key: DemoIdentityKey;
+  label: string;
+  person: string;
+  symbol: string;
+  className: string;
+}[] = [
+  { key: "admin", label: "HR Manager", person: "Reem", symbol: "◆", className: "saudi-badge-premium" },
+  { key: "hrSpecialist", label: "HR Specialist", person: "Aisha", symbol: "●", className: "border-sky-200 bg-sky-50 text-sky-950 hover:bg-sky-100" },
+  { key: "departmentManager", label: "Department Manager", person: "Fahad", symbol: "■", className: "border-amber-200 bg-amber-50 text-amber-950 hover:bg-amber-100" },
+  { key: "employee", label: "Employee", person: "Omar", symbol: "○", className: "border-emerald-200 bg-emerald-50 text-emerald-950 hover:bg-emerald-100" },
+];
 
 export function LoginForm() {
   const router = useRouter();
@@ -10,6 +30,7 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [demoRole, setDemoRole] = useState<DemoIdentityKey | null>(null);
 
   async function authenticate(credentials: { email: string; password: string }, isDemo = false) {
     setLoading(true);
@@ -48,21 +69,24 @@ export function LoginForm() {
     await authenticate({ email, password });
   }
 
-  async function handleDemoLogin() {
-    const demoCredentials = { email: "admin@demo.com", password: "Demo@1234" };
+  async function handleDemoLogin(kind: DemoIdentityKey, identity: DemoIdentity) {
+    setDemoRole(kind);
+    const demoCredentials = { email: identity.email, password: identity.password };
     setEmail(demoCredentials.email);
     setPassword(demoCredentials.password);
     await authenticate(demoCredentials, true);
+    setDemoRole(null);
   }
 
   return (
     <div className="saudi-glass w-full max-w-md rounded-xl border-0 shadow-2xl">
       <div className="p-6 pb-2 text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[hsl(var(--saudi-green))] to-[hsl(var(--saudi-green-dark))] shadow-lg">
-          <span className="text-2xl font-bold text-white">U</span>
-        </div>
+        <BrandMark className="mx-auto mb-4 h-16 w-16 drop-shadow-lg" priority />
         <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
-        <p className="mt-1 text-sm text-slate-500">Sign in to your UDS-HR account</p>
+        <p className="mt-1 text-sm text-slate-500">Sign in to your {productBrand.name} account</p>
+        <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+          {productBrand.attribution}
+        </p>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -124,15 +148,29 @@ export function LoginForm() {
             <div className="flex-1 border-t border-slate-200" />
           </div>
 
-          <button
-            type="button"
-            onClick={handleDemoLogin}
-            disabled={loading}
-            className="saudi-badge-premium inline-flex h-11 w-full items-center justify-center rounded-md border px-4 font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <span className="mr-2">★</span>
-            {loading ? "Opening demo..." : "Try the demo (one click)"}
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            {demoOptions.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                aria-label={`${option.label} demo`}
+                onClick={() => handleDemoLogin(option.key, demoIdentities[option.key])}
+                disabled={loading}
+                className={`inline-flex min-h-14 items-center gap-2 rounded-lg border px-3 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${option.className}`}
+              >
+                <span aria-hidden="true" className="text-xs">{option.symbol}</span>
+                <span className="min-w-0">
+                  <span className="block truncate text-xs font-semibold">
+                    {demoRole === option.key ? "Opening..." : option.label}
+                  </span>
+                  <span className="block text-[10px] opacity-60">{option.person} · demo</span>
+                </span>
+              </button>
+            ))}
+          </div>
+          <p className="text-center text-[10px] leading-4 text-slate-400">
+            Fictional Rukn Energy data · role-based access · no real employee records
+          </p>
 
           <div className="pt-1 text-center text-sm text-slate-500">
             Don&apos;t have an account?{" "}

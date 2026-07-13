@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@hrms-app/ui";
 import { signupSchema } from "@hrms-app/validators";
-import { SaudiBackdrop, SaudiFlagMark, SaudiPalmette } from "~/components/saudi/saudi-backdrop";
+import { SaudiBackdrop, SaudiPalmette } from "~/components/saudi/saudi-backdrop";
+import { BrandLockup, BrandMark } from "~/components/brand/brand-lockup";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -61,10 +62,7 @@ export default function SignupPage() {
       <SaudiBackdrop variant="jeddah" dim className="absolute inset-0" />
 
       <header className="relative z-10 flex items-center justify-between px-6 py-5 sm:px-10">
-        <div className="flex items-center gap-3">
-          <SaudiFlagMark className="h-7 w-auto drop-shadow-md" />
-          <span className="text-lg font-semibold tracking-tight text-white">UDS-HR</span>
-        </div>
+        <BrandLockup inverse priority />
         <a
           href="/login"
           className="text-sm text-white/80 transition hover:text-white"
@@ -76,14 +74,12 @@ export default function SignupPage() {
       <main className="relative z-10 flex min-h-[calc(100vh-80px)] items-center justify-center px-6 py-10 sm:px-10">
         <Card className="saudi-glass w-full max-w-2xl border-0 shadow-2xl">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[hsl(var(--saudi-green))] to-[hsl(var(--saudi-green-dark))] shadow-lg">
-              <span className="text-xl font-bold text-white">U</span>
-            </div>
+            <BrandMark className="mx-auto mb-3 h-14 w-14 drop-shadow-lg" />
             <CardTitle className="text-2xl font-bold tracking-tight">
-              Start your company's HR
+              Start your company&apos;s HR
             </CardTitle>
             <CardDescription>
-              Set up your Saudi HR account in minutes. We'll create your
+              Set up your Saudi HR account in minutes. We&apos;ll create your
               isolated tenant schema automatically.
             </CardDescription>
             <SaudiPalmette className="mx-auto mt-3 h-4 w-32 text-[hsl(var(--saudi-gold))]" />

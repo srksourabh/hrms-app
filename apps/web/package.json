@@ -9,12 +9,13 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test --config=../../playwright.config.ts"
   },
   "dependencies": {
     "@hrms-app/auth": "workspace:*",
     "@hrms-app/config": "workspace:*",
     "@hrms-app/db": "workspace:*",
+    "@hrms-app/demo": "workspace:*",
     "@hrms-app/documents": "workspace:*",
     "@hrms-app/email": "workspace:*",
     "@hrms-app/leave": "workspace:*",

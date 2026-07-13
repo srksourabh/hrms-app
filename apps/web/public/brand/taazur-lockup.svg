@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 160" role="img" aria-labelledby="title desc">
+  <title id="title">Taāzur — تآزر</title>
+  <desc id="desc">Taāzur bilingual logo, powered by UDS-Noon JV.</desc>
+  <g transform="translate(16 16)">
+    <rect width="128" height="128" rx="32" fill="#0B5D46"/>
+    <path d="M27 49C38 29 55 30 64 47C73 64 90 65 101 46" fill="none" stroke="#F8F4E8" stroke-width="13" stroke-linecap="round"/>
+    <path d="M27 79C38 99 55 98 64 81C73 64 90 63 101 82" fill="none" stroke="#80C9B2" stroke-width="13" stroke-linecap="round"/>
+    <circle cx="52" cy="25" r="6" fill="#D7A24A"/>
+    <circle cx="76" cy="25" r="6" fill="#D7A24A"/>
+    <path d="M64 57l8 7-8 7-8-7 8-7z" fill="#D7A24A"/>
+  </g>
+  <text x="174" y="74" fill="#092D23" font-family="Inter, Arial, sans-serif" font-size="50" font-weight="750" letter-spacing="-1.5">Taāzur</text>
+  <text x="398" y="73" fill="#0B5D46" font-family="Cairo, Tahoma, sans-serif" font-size="47" font-weight="700" direction="rtl">تآزر</text>
+  <text x="177" y="108" fill="#66756F" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="650" letter-spacing="1.4">POWERED BY UDS-NOON JV</text>
+  <path d="M177 124h327" stroke="#D7A24A" stroke-width="3" stroke-linecap="round"/>
+</svg>

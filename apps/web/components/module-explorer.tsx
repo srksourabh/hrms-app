@@ -5,9 +5,9 @@ import { useMemo, useState } from "react";
 import {
   ArrowUpRight,
   CheckCircle2,
-  Clock3,
   Layers3,
   Search,
+  ShieldCheck,
   Sparkles,
 } from "lucide-react";
 import {
@@ -18,9 +18,17 @@ import {
 } from "~/lib/module-catalog";
 
 const statusStyles: Record<ModuleStatus, string> = {
-  available: "border-emerald-400/25 bg-emerald-400/10 text-emerald-200",
-  preview: "border-amber-300/25 bg-amber-300/10 text-amber-100",
-  planned: "border-white/10 bg-white/5 text-slate-300",
+  live: "border-emerald-400/25 bg-emerald-400/10 text-emerald-200",
+  demo: "border-amber-300/25 bg-amber-300/10 text-amber-100",
+  mock: "border-sky-300/25 bg-sky-300/10 text-sky-100",
+};
+
+const phaseLabels: Record<number, string> = {
+  1: "Core HR",
+  2: "Talent",
+  3: "Saudi services",
+  4: "Experience",
+  5: "Platform",
 };
 
 export function ModuleExplorer() {
@@ -49,13 +57,13 @@ export function ModuleExplorer() {
           <div className="max-w-3xl">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">
               <Sparkles className="h-3.5 w-3.5" />
-              PRD v5.0 capability map
+              Operational product workspaces
             </div>
             <h1 className="text-4xl font-medium tracking-[-0.04em] sm:text-5xl">
               Every HR capability. One operating system.
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-white/65">
-              Explore every capability defined in the Saudi HR product plan. Workspaces are clearly marked as available, preview, or planned—nothing is hidden behind broken links.
+              Run every customer-demo workflow from one place. Live product routes, interactive demo operations, and simulated authority adapters are clearly distinguished.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -65,7 +73,7 @@ export function ModuleExplorer() {
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
               <p className="text-3xl font-semibold tracking-tight">{totalPrdFeatures}</p>
-              <p className="mt-1 text-xs text-white/55">PRD features mapped</p>
+              <p className="mt-1 text-xs text-white/55">Connected capabilities</p>
             </div>
           </div>
         </div>
@@ -92,7 +100,7 @@ export function ModuleExplorer() {
                 phase === item ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-900"
               }`}
             >
-              {item === "all" ? "All phases" : `Phase ${item}`}
+              {item === "all" ? "All workspaces" : phaseLabels[item as number]}
             </button>
           ))}
         </div>
@@ -110,17 +118,17 @@ export function ModuleExplorer() {
                 {String(index + 1).padStart(2, "0")}
               </div>
               <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
-                module.status === "available"
+                module.status === "live"
                   ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                  : module.status === "preview"
+                  : module.status === "demo"
                     ? "border-amber-200 bg-amber-50 text-amber-700"
-                    : "border-slate-200 bg-slate-50 text-slate-500"
+                    : "border-sky-200 bg-sky-50 text-sky-700"
               }`}>
                 {moduleStatusLabels[module.status]}
               </span>
             </div>
             <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">
-              {module.eyebrow} · Phase {module.phase}
+              {module.eyebrow} · {phaseLabels[module.phase]}
             </p>
             <h2 className="mt-2 text-xl font-semibold tracking-[-0.025em] text-slate-950">
               {module.name}
@@ -129,7 +137,7 @@ export function ModuleExplorer() {
             <p className="mt-4 line-clamp-2 text-sm leading-6 text-slate-500">{module.description}</p>
             <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
               <span className="text-xs font-medium text-slate-400">
-                PRD {module.featureIds.join(" · ")}
+                {module.capabilities.length} connected capabilities
               </span>
               <ArrowUpRight className="h-4 w-4 text-slate-400 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-emerald-700" />
             </div>
@@ -148,9 +156,9 @@ export function ModuleExplorer() {
       )}
 
       <section className="grid gap-3 rounded-2xl bg-slate-950 p-5 text-white sm:grid-cols-3">
-        {(["available", "preview", "planned"] as ModuleStatus[]).map((status) => {
+        {(["live", "demo", "mock"] as ModuleStatus[]).map((status) => {
           const count = productModules.filter((module) => module.status === status).length;
-          const Icon = status === "available" ? CheckCircle2 : status === "preview" ? Sparkles : Clock3;
+          const Icon = status === "live" ? CheckCircle2 : status === "demo" ? Sparkles : ShieldCheck;
           return (
             <div key={status} className={`rounded-xl border p-4 ${statusStyles[status]}`}>
               <Icon className="h-5 w-5" />

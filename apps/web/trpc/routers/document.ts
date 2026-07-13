@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, requireRole } from "../server";
+import { createTRPCRouter, companyProcedure, protectedProcedure, requireRole } from "../server";
 import { schema } from "@hrms-app/db";
 import { createDocumentSchema, updateDocumentSchema, documentQuerySchema } from "@hrms-app/validators";
 import { and, eq, desc, lte, isNotNull } from "drizzle-orm";
@@ -30,7 +30,7 @@ function toThreshold(days: number): ExpiryThreshold {
 }
 
 export const documentRouter = createTRPCRouter({
-  list: protectedProcedure
+  list: companyProcedure
     .input(documentQuerySchema.optional().default({}))
     .query(async ({ ctx, input }) => {
       const conditions: ReturnType<typeof eq>[] = [];
@@ -49,7 +49,7 @@ export const documentRouter = createTRPCRouter({
       });
     }),
 
-  getById: protectedProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
+  getById: companyProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
     return await ctx.db.query.documents.findFirst({
       where: eq(schema.tenant.documents.id, input),
       with: { employee: true },

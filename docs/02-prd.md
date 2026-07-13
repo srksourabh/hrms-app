@@ -1,4 +1,4 @@
-# UDS-HR
+# Taāzur
 ## Product Requirements Document v5.0
 ### AI-Native Saudi HR & Payroll Platform for MSMEs
 
@@ -15,7 +15,7 @@ Status: Enhanced for engineering handoff (Claude Code ready)
 | 2.0 | 11 Jul 2026 | Original 13-section PRD | Founding team |
 | 3.0 | 11 Jul 2026 | Added 7 new sections (NFR, Accessibility, Pricing, SLA, RACI, Migration, Legal Docs), enhanced 5 existing sections (AI risk tiering, API failure playbook, security verification levels, data retention/RTO-RPO, go-live ownership) | Gap analysis against ISO 29148, ISO 27001, OWASP ASVS, WCAG 2.1 AA, PDPL, NIST AI RMF |
 | 4.0 | 11 Jul 2026 | Added 13 new features closing HR generalist coverage gaps across all phases of recruitment, retention, and release (workforce planning, referrals, background/reference checks, 30/60/90 onboarding, succession planning, internal mobility, total rewards, recognition, stay interviews, employee relations, career pathing, alumni/boomerang tracking), plus new Section 21 | Research against SHRM Body of Applied Skills and Knowledge, full-cycle recruitment life cycle research, retention framework research (5 C's, total rewards), offboarding/alumni best-practice research |
-| 4.1 | 11 Jul 2026 | Renamed product from NoonHR to UDS-HR throughout the document: title, body references, portal wireframe headers, career page domain (company.noonhr.com to company.uds-hr.com), and all table references. No functional or scope changes | Rename request |
+| 5.1 | 13 Jul 2026 | Adopted the configurable Taāzur / تآزر product identity, bilingual lockup, UDS-Noon JV attribution, and white-label rules across product surfaces and generated outputs. Customer career domains remain tenant-configured. | Shipment branding |
 | 5.0 | 11 Jul 2026 | Added Section 13.5, Data Structure & Entity Model: 45 entities across 12 domains, a core ERD, domain-grouped entity reference tables, a representative Prisma schema pattern, and indexing notes. Every entity traces back to a feature already defined in Sections 5-20; none are speculative | Brainstorm pass across every feature in the document, cross-checked against the tech stack (Section 4) and multi-tenancy model (Section 13.2) |
 
 **Sections and features marked `[NEW]` or `[ENHANCED]` throughout this document carry an inline tag noting which revision introduced them** (v3.0 or v4.0). Untagged content is carried forward from v2.0 unchanged.
@@ -61,7 +61,7 @@ Status: Enhanced for engineering handoff (Claude Code ready)
 
 ## 1. Product Overview `[ENHANCED]`
 
-**Product:** UDS-HR, AI-Native Saudi HR & Payroll Platform for MSMEs (5-250 employees)
+**Product:** Taāzur, AI-Native Saudi HR & Payroll Platform for MSMEs (5-250 employees)
 
 **Core value proposition:** An AI-native HR platform that keeps client data consistent across Qiwa, Mudad, and GOSI, automates the entire employee lifecycle from recruitment to offboarding, and gives leadership AI-powered insights to make smarter workforce decisions.
 
@@ -139,7 +139,7 @@ These are hard targets. Every feature in Section 5 must be built to satisfy thes
 
 ### 3.1 Single App, One Login, Five Roles
 
-UDS-HR is one application with one login page. Every user logs in at the same URL. The system detects their role and shows a role-specific dashboard. There is no separate "employee app" vs "HR app," it is one unified experience with permissions controlling what each role can see and do.
+Taāzur is one application with one login page. Every user logs in at the same URL. The system detects their role and shows a role-specific dashboard. There is no separate "employee app" vs "HR app," it is one unified experience with permissions controlling what each role can see and do.
 
 ### 3.2 The Five Roles
 
@@ -284,7 +284,7 @@ To keep this document usable rather than bloated, full acceptance criteria are w
 
 | # | Feature | Description |
 |---|---|---|
-| 3.1 | Qiwa API integration | Contract creation, amendments, resignation workflow from inside UDS-HR |
+| 3.1 | Qiwa API integration | Contract creation, amendments, resignation workflow from inside Taāzur |
 | 3.2 | Mudad API submission | Direct wage file submission replacing manual upload |
 | 3.3 | GOSI reporting integration | Salary change notifications within 15-day window |
 | 3.4 | Muqeem integration | Iqama renewal, exit re-entry permit management |
@@ -330,7 +330,7 @@ To keep this document usable rather than bloated, full acceptance criteria are w
 | 5.4 | AI recruitment agent | End-to-end: parse JD, source candidates, screen resumes, schedule interviews, draft offers |
 | 5.5 | People analytics | Cross-module analytics: recruitment funnel, retention cohorts, compensation benchmarking, diversity metrics |
 | 5.6 | ZATCA e-invoicing | Integration with Saudi e-invoicing for contractor payments |
-| 5.7 | Multi-company support | Manage multiple CRs (subsidiaries) under one UDS-HR account with consolidated reporting |
+| 5.7 | Multi-company support | Manage multiple CRs (subsidiaries) under one Taāzur account with consolidated reporting |
 | 5.8 | Custom workflow builder | No-code workflow designer for approval chains, escalation rules, automated notifications |
 | 5.9 | API marketplace | Open API for third-party integrations: accounting (Qoyod, Wafeq), ERP (SAP, Odoo) |
 
@@ -524,7 +524,7 @@ else:
 
 ### 8.5 Third-Party API Failure Playbook `[NEW]`
 
-Qiwa, Mudad, GOSI, and Muqeem are government systems outside UDS-HR's control. This subsection did not exist in v2.0 and closes the largest operational gap identified in the July 2026 gap analysis.
+Qiwa, Mudad, GOSI, and Muqeem are government systems outside Taāzur's control. This subsection did not exist in v2.0 and closes the largest operational gap identified in the July 2026 gap analysis.
 
 | Scenario | System behavior |
 |---|---|
@@ -669,7 +669,7 @@ Shadcn/ui components are built on Radix UI primitives, which have strong accessi
 ### 12.2 Super Admin Dashboard
 
 ```
-UDS-HR [AR|EN]  Alerts(5)  [Admin]
+Taāzur [AR|EN]  Alerts(5)  [Admin]
 
 Sidebar: Dashboard, Org Chart, Employees, HR Ops, Recruitment, Payroll,
 Compliance, AI Insights, Reports, Settings, Billing, Audit Log
@@ -690,7 +690,7 @@ Pending: Approvals 3, Leaves 2, Expenses 1, Offers 1
 ### 12.3 HR Manager Dashboard
 
 ```
-UDS-HR [AR|EN]  Alerts(8)  [HR Mgr]
+Taāzur [AR|EN]  Alerts(8)  [HR Mgr]
 
 Sidebar: Dashboard, Employees, Recruitment, Onboarding, Offboarding, Payroll,
 Leave, Attendance, Performance, Training, Skills, Travel, Surveys, Documents,
@@ -713,7 +713,7 @@ Ask AI Copilot: [Ask anything about HR policy... ->]
 ### 12.4 Department Manager Dashboard
 
 ```
-UDS-HR [AR|EN]  Alerts(3)  [Manager]
+Taāzur [AR|EN]  Alerts(3)  [Manager]
 
 Sidebar: My Team, Approvals, Leave, Performance, Goals, Training, Expenses,
 AI Copilot, Reports
@@ -737,7 +737,7 @@ Upcoming Reviews: Omar Q2 review due Jul 15, Sara probation review day 85
 ### 12.5 HR Specialist Dashboard
 
 ```
-UDS-HR [AR|EN]  Tasks(6)  [Specialist]
+Taāzur [AR|EN]  Tasks(6)  [Specialist]
 
 Sidebar: My Tasks, Payroll, Recruitment, Documents, Onboarding, AI Copilot
 
@@ -754,7 +754,7 @@ Ask AI Copilot: [Ask about labor law, policy... ->]
 ### 12.6 Employee Self-Service Portal
 
 ```
-UDS-HR [AR|EN]  [Ahmed Al-Rashidi]
+Taāzur [AR|EN]  [Ahmed Al-Rashidi]
 
 Sidebar: Home, My Profile, Payslips, Leave, Attendance, Documents, Training,
 Expenses, Goals, Ask AI
@@ -777,7 +777,7 @@ Contract active since 15 Mar 2022
 ### 12.7 Candidate Portal (External)
 
 ```
-[Company Name] Careers, Powered by UDS-HR [AR|EN]
+[Company Name] Careers, Powered by Taāzur [AR|EN]
 
 Open Positions:
 - Senior Accountant, Finance Dept, Riyadh, Full-time, SAR 8,000-12,000, Posted 5 days ago [Apply ->]
@@ -793,7 +793,7 @@ Applied -> Screening -> Interview -> Offer
 ### 12.8 AI Copilot Screen (HR Manager, Manager, Specialist, Employee)
 
 ```
-UDS-HR AI Copilot [AR|EN]
+Taāzur AI Copilot [AR|EN]
 
 HR: "Can we extend Ahmed's probation?"
 
@@ -1468,7 +1468,7 @@ Most target MSMEs are moving off Excel or a legacy HR tool. This did not exist i
 
 | Step | Action |
 |---|---|
-| 1 | Client provides employee data via a UDS-HR-provided Excel template (columns matching Feature 1.1 employee master record fields) |
+| 1 | Client provides employee data via a Taāzur-provided Excel template (columns matching Feature 1.1 employee master record fields) |
 | 2 | System validates: required fields present, iqama/passport format, IBAN format, date formats, no duplicate national IDs within the tenant |
 | 3 | Validation errors are returned as a downloadable annotated file, not a blocking wall of text; client corrects and re-uploads |
 | 4 | On successful validation, records are staged, not committed, and shown to HR for a final review screen before committing to the live database |
@@ -1569,7 +1569,7 @@ This section did not exist before v4.0. It documents the research basis for the 
 
 The standard full-cycle recruitment model runs seven stages: workforce planning, job analysis/preparation, sourcing, screening, interviewing/selection, hiring (offer, negotiation, background/reference checks), and onboarding through the first 90 days.
 
-| Recruitment stage | UDS-HR feature(s) | Status before v4.0 | Status after v4.0 |
+| Recruitment stage | Taāzur feature(s) | Status before v4.0 | Status after v4.0 |
 |---|---|---|---|
 | Workforce planning (Stage 0) | Feature 2.15 | Missing | Covered |
 | Job analysis / preparation | Feature 2.1 (position creation, competency requirements) | Covered | Covered |
@@ -1586,7 +1586,7 @@ The standard full-cycle recruitment model runs seven stages: workforce planning,
 
 Retention research converges on a small set of consistently cited levers: fair and transparent compensation, recognition, career development and internal mobility, manager relationship quality (stay interviews), succession visibility, and measured engagement (eNPS, pulse surveys). The "5 C's" framing (Communication, Connection, Culture, Contribution, Career Development) and the "Respect, Recognition, Rewards" framing both point at the same underlying levers from different angles.
 
-| Retention lever | UDS-HR feature(s) | Status before v4.0 | Status after v4.0 |
+| Retention lever | Taāzur feature(s) | Status before v4.0 | Status after v4.0 |
 |---|---|---|---|
 | Fair, transparent compensation (Total Rewards) | Feature 4.11 | Missing | Covered |
 | Recognition | Feature 4.12 | Missing | Covered |
@@ -1604,7 +1604,7 @@ Retention research converges on a small set of consistently cited levers: fair a
 
 Modern offboarding research treats release as a relationship transition, not a termination event: departure conversation, time-boxed knowledge transfer with a named recipient, exit interview, asset/access recovery, and, distinctly, an alumni relationship that keeps rehire and referral value on the table. Boomerang hires are a large enough share of hiring at many companies now that treating rehire eligibility as an afterthought is a measurable cost, not just a nicety.
 
-| Release stage | UDS-HR feature(s) | Status before v4.0 | Status after v4.0 |
+| Release stage | Taāzur feature(s) | Status before v4.0 | Status after v4.0 |
 |---|---|---|---|
 | Departure notification / process trigger | Feature 2.10 | Covered | Covered |
 | Structured knowledge transfer with a named successor/owner per task | Feature 2.10 (enhanced) | Present as a label only, no structure | Covered |
@@ -1621,6 +1621,6 @@ Employee relations and case management (Feature 4.14, grievance intake and disci
 
 ---
 
-*UDS-HR, Product Requirements Document v5.0*
+*Taāzur, Product Requirements Document v5.0*
 *AI-Native Saudi HR & Payroll Platform*
 *Confidential, 11 July 2026*

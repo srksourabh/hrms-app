@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, requireRole } from "../server";
+import { createTRPCRouter, companyProcedure, requireRole } from "../server";
 import { schema } from "@hrms-app/db";
 import { createEmployeeSchema, updateEmployeeSchema, employeeQuerySchema } from "@hrms-app/validators";
 import { and, eq, like, desc } from "drizzle-orm";
 
 export const employeeRouter = createTRPCRouter({
-  list: protectedProcedure
+  list: companyProcedure
     .input(employeeQuerySchema.optional().default({}))
     .query(async ({ ctx, input }) => {
       const conditions: ReturnType<typeof eq>[] = [];
@@ -24,7 +24,7 @@ export const employeeRouter = createTRPCRouter({
       });
     }),
 
-  getById: protectedProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
+  getById: companyProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
     return await ctx.db.query.employees.findFirst({
       where: eq(schema.tenant.employees.id, input),
       with: {

@@ -9,6 +9,7 @@ import {
   Button,
   Hr,
 } from "@react-email/components";
+import { productBrand } from "@hrms-app/config/brand";
 
 interface LeaveRequestEmailProps {
   employeeName: string;
@@ -18,7 +19,7 @@ interface LeaveRequestEmailProps {
   endDate: string;
   status: string;
   dashboardUrl: string;
-  appName: string;
+  appName?: string;
 }
 
 const styles = {
@@ -119,7 +120,7 @@ export function LeaveRequestEmail({
   endDate,
   status,
   dashboardUrl,
-  appName,
+  appName = productBrand.name,
 }: LeaveRequestEmailProps) {
   return (
     <Html>

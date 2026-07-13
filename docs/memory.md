@@ -1,4 +1,4 @@
-# Memory — hrms-app (UDS-HR)
+# Memory — hrms-app (Taāzur)
 
 ## Project metadata
 - **Created**: 2026-07-11
@@ -44,9 +44,9 @@ Plus 5 tables in public schema:
 
 ## Session notes
 
-### 2026-07-11: Foundation + UDS-HR PRD integration
+### 2026-07-11: Foundation + Taāzur PRD integration
 - Built SaaS foundation (hrms-app)
-- Applied UDS-HR PRD v5.0 requirements
+- Applied Taāzur PRD v5.0 requirements
 - Implemented schema-per-tenant multi-tenancy
 - Auth tables moved to public schema for single-login flow
 - Created tenant manager (create schema, route connections)

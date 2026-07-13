@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, requireRole } from "../server";
+import { createTRPCRouter, companyProcedure, requireRole } from "../server";
 import { schema } from "@hrms-app/db";
 import { TRPCError } from "@trpc/server";
 import {
@@ -34,7 +34,7 @@ function toEmployeeContext(row: typeof schema.tenant.employees.$inferSelect): Em
 
 export const payrollRouter = createTRPCRouter({
   run: createTRPCRouter({
-    list: protectedProcedure
+    list: companyProcedure
       .input(payrollQuerySchema.optional().default({}))
       .query(async ({ ctx, input }) => {
         const conditions: ReturnType<typeof eq>[] = [];
@@ -117,7 +117,7 @@ export const payrollRouter = createTRPCRouter({
         return run;
       }),
 
-    getById: protectedProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
+    getById: companyProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
       return await ctx.db.query.payrollRuns.findFirst({
         where: eq(schema.tenant.payrollRuns.id, input),
         with: { payslips: { with: { employee: true } }, complianceChecks: true, wageFiles: true },
@@ -126,7 +126,7 @@ export const payrollRouter = createTRPCRouter({
   }),
 
   payslip: createTRPCRouter({
-    list: protectedProcedure
+    list: companyProcedure
       .input(
         z
           .object({
@@ -148,7 +148,7 @@ export const payrollRouter = createTRPCRouter({
         });
       }),
 
-    getById: protectedProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
+    getById: companyProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
       return await ctx.db.query.payslips.findFirst({
         where: eq(schema.tenant.payslips.id, input),
         with: { employee: true, payrollRun: true },
@@ -164,7 +164,7 @@ export const payrollRouter = createTRPCRouter({
   }),
 
   compliance: createTRPCRouter({
-    list: protectedProcedure
+    list: companyProcedure
       .input(
         z
           .object({

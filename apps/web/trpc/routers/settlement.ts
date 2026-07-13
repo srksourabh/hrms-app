@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, requireRole } from "../server";
+import { createTRPCRouter, companyProcedure, requireRole } from "../server";
 import { schema } from "@hrms-app/db";
 import { createFinalSettlementSchema } from "@hrms-app/validators";
 import { eq, desc } from "drizzle-orm";
 
 export const settlementRouter = createTRPCRouter({
-  list: protectedProcedure
+  list: companyProcedure
     .input(
       z
         .object({
@@ -30,7 +30,7 @@ export const settlementRouter = createTRPCRouter({
       return settlement;
     }),
 
-  getByEmployee: protectedProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
+  getByEmployee: companyProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
     return await ctx.db.query.finalSettlements.findFirst({
       where: eq(schema.tenant.finalSettlements.employeeId, input),
       with: { employee: true },

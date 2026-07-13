@@ -9,6 +9,7 @@ import {
   Button,
   Hr,
 } from "@react-email/components";
+import { productBrand } from "@hrms-app/config/brand";
 
 interface DocumentExpiryEmailProps {
   employeeName: string;
@@ -17,7 +18,7 @@ interface DocumentExpiryEmailProps {
   expiryDate: string;
   daysRemaining: number;
   dashboardUrl: string;
-  appName: string;
+  appName?: string;
 }
 
 type UrgencyLevel = "high" | "medium" | "normal";
@@ -149,7 +150,7 @@ export function DocumentExpiryEmail({
   expiryDate,
   daysRemaining,
   dashboardUrl,
-  appName,
+  appName = productBrand.name,
 }: DocumentExpiryEmailProps) {
   const urgency = getUrgency(daysRemaining);
   const config = urgencyConfig[urgency];

@@ -39,6 +39,9 @@ importers:
       '@hrms-app/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@hrms-app/demo':
+        specifier: workspace:*
+        version: link:../../packages/demo
       '@hrms-app/documents':
         specifier: workspace:*
         version: link:../../packages/documents
@@ -244,6 +247,21 @@ importers:
       tsx:
         specifier: ^4.23.0
         version: 4.23.0
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.0)
+
+  packages/demo:
+    devDependencies:
+      '@hrms-app/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@hrms-app/typescript-config':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
       typescript:
         specifier: ^5.7.0
         version: 5.9.3

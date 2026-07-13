@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, requireRole } from "../server";
+import { createTRPCRouter, companyProcedure, protectedProcedure, requireRole } from "../server";
 import { schema } from "@hrms-app/db";
 import {
   createLeaveTypeSchema,
@@ -84,7 +84,7 @@ export const leaveRouter = createTRPCRouter({
   }),
 
   request: createTRPCRouter({
-    list: protectedProcedure
+    list: companyProcedure
       .input(
         z
           .object({
@@ -117,7 +117,7 @@ export const leaveRouter = createTRPCRouter({
         });
       }),
 
-    getById: protectedProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
+    getById: companyProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
       return await ctx.db.query.leaveRequests.findFirst({
         where: eq(schema.tenant.leaveRequests.id, input),
         with: { employee: true, leaveType: true, approvedBy: true },
@@ -127,7 +127,22 @@ export const leaveRouter = createTRPCRouter({
     create: protectedProcedure
       .input(createLeaveRequestSchema)
       .mutation(async ({ ctx, input }) => {
-        const [request] = await ctx.db.insert(schema.tenant.leaveRequests).values(input).returning();
+        let employeeId = input.employeeId;
+        if (ctx.user.role === "employee") {
+          const linkedEmployeeId = ctx.user.employeeId || (
+            await ctx.adminDb.query.users.findFirst({
+              where: (users, { eq }) => eq(users.id, ctx.user.id!),
+            })
+          )?.employeeId;
+          if (!linkedEmployeeId) {
+            throw new Error("Employee profile is not linked to this login");
+          }
+          employeeId = linkedEmployeeId;
+        }
+        const [request] = await ctx.db
+          .insert(schema.tenant.leaveRequests)
+          .values({ ...input, employeeId })
+          .returning();
         return request;
       }),
 
@@ -156,7 +171,7 @@ export const leaveRouter = createTRPCRouter({
   }),
 
   balance: createTRPCRouter({
-    list: protectedProcedure
+    list: companyProcedure
       .input(
         z
           .object({

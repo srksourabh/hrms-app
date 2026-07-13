@@ -4,6 +4,7 @@ import { adminDb } from "@hrms-app/db";
 import { users, tenants } from "@hrms-app/db";
 import { compare } from "bcryptjs";
 import { eq } from "drizzle-orm";
+import { resolveDemoIdentity } from "./demo-identities";
 
 type AuthResult = ReturnType<typeof NextAuth>;
 
@@ -11,6 +12,7 @@ declare module "next-auth" {
   interface User {
     role?: string;
     tenantId?: string;
+    employeeId?: string;
     preferredLanguage?: "en" | "ar";
   }
 
@@ -18,6 +20,7 @@ declare module "next-auth" {
     user: {
       id: string;
       tenantId: string;
+      employeeId: string;
       role: string;
       regulatoryContext: "saudi" | "india";
       preferredLanguage: "en" | "ar";
@@ -27,6 +30,7 @@ declare module "next-auth" {
   interface JWT {
     role?: string;
     tenantId?: string;
+    employeeId?: string;
     id?: string;
     regulatoryContext?: "saudi" | "india";
     preferredLanguage?: "en" | "ar";
@@ -58,17 +62,21 @@ const nextAuthResult: AuthResult = NextAuth({
 
         const email = credentials.email as string;
         const password = credentials.password as string;
-        const isDemoLogin =
-          process.env.DEMO_MODE === "true" &&
-          email === "admin@demo.com" &&
-          password === "Demo@1234";
+        const demoIdentity = resolveDemoIdentity(
+          email,
+          password,
+          process.env.DEMO_MODE === "true",
+        );
 
-        if (isDemoLogin) {
+        if (demoIdentity) {
           return {
-            id: "demo-user",
-            email,
-            name: "Sourabh",
-            role: "hr_manager",
+            id: demoIdentity.id,
+            email: demoIdentity.email,
+            name: demoIdentity.name,
+            role: demoIdentity.role,
+            employeeId: demoIdentity.employeeId,
+            image: demoIdentity.image,
+            preferredLanguage: demoIdentity.preferredLanguage,
           };
         }
 
@@ -97,6 +105,7 @@ const nextAuthResult: AuthResult = NextAuth({
       if (user) {
         token.role = user.role;
         token.tenantId = user.tenantId;
+        token.employeeId = user.employeeId;
 
         if (user.tenantId) {
           const tenant = await adminDb.query.tenants.findFirst({
@@ -116,6 +125,7 @@ const nextAuthResult: AuthResult = NextAuth({
         session.user.id = (token.sub ?? token.id) as string;
         session.user.role = (token.role as string) ?? "";
         session.user.tenantId = (token.tenantId as string) ?? "";
+        session.user.employeeId = (token.employeeId as string) ?? "";
         session.user.regulatoryContext = (token.regulatoryContext as "saudi" | "india") ?? "saudi";
         session.user.preferredLanguage = (token.preferredLanguage as "en" | "ar") ?? "en";
       }

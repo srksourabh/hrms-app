@@ -1,4 +1,5 @@
-import { SaudiBackdrop, SaudiFlagMark, SaudiPalmette } from "~/components/saudi/saudi-backdrop";
+import { SaudiBackdrop, SaudiPalmette } from "~/components/saudi/saudi-backdrop";
+import { BrandLockup } from "~/components/brand/brand-lockup";
 import { LoginForm } from "./login-form";
 
 export default function LoginPage() {
@@ -9,12 +10,7 @@ export default function LoginPage() {
 
       {/* Top bar: language toggle + brand */}
       <header className="relative z-10 flex items-center justify-between px-6 py-5 sm:px-10">
-        <div className="flex items-center gap-3">
-          <SaudiFlagMark className="h-7 w-auto drop-shadow-md" />
-          <span className="text-lg font-semibold tracking-tight text-white">
-            UDS-HR
-          </span>
-        </div>
+        <BrandLockup inverse priority />
         <div className="flex items-center gap-2 text-sm text-white/80">
           <button
             type="button"
@@ -40,7 +36,7 @@ export default function LoginPage() {
           </h1>
           <p className="mb-10 max-w-md text-lg leading-relaxed text-white/85">
             The AI-native HR & payroll platform built for the Kingdom&apos;s
-            SMEs — compliant with Qiwa, Mudad, and GOSI from day one.
+            SMEs — designed around Qiwa, Mudad, and GOSI workflows.
           </p>
 
           <SaudiPalmette className="mb-10 h-5 w-40 text-[hsl(var(--saudi-gold))]" />
@@ -70,7 +66,7 @@ export default function LoginPage() {
 
       {/* Bottom: trust strip */}
       <footer className="relative z-10 px-6 pb-4 text-center text-xs text-white/60 sm:px-10">
-        PDPL compliant · Hosted in me-south-1 · Trusted by Saudi SMEs
+        Fictional customer demo · No production employee records · External integrations are simulated
       </footer>
     </div>
   );

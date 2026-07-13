@@ -9,13 +9,14 @@ import {
   Button,
   Hr,
 } from "@react-email/components";
+import { productBrand } from "@hrms-app/config/brand";
 
 interface PayslipReadyEmailProps {
   employeeName: string;
   period: string;
   netPay: string;
   dashboardUrl: string;
-  appName: string;
+  appName?: string;
 }
 
 const styles = {
@@ -123,7 +124,7 @@ export function PayslipReadyEmail({
   period,
   netPay,
   dashboardUrl,
-  appName,
+  appName = productBrand.name,
 }: PayslipReadyEmailProps) {
   return (
     <Html>

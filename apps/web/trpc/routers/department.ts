@@ -1,18 +1,18 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, requireRole } from "../server";
+import { createTRPCRouter, companyProcedure, requireRole } from "../server";
 import { schema } from "@hrms-app/db";
 import { createDepartmentSchema, updateDepartmentSchema } from "@hrms-app/validators";
 import { eq } from "drizzle-orm";
 
 export const departmentRouter = createTRPCRouter({
-  list: protectedProcedure.query(async ({ ctx }) => {
+  list: companyProcedure.query(async ({ ctx }) => {
     return await ctx.db.query.departments.findMany({
       with: { head: true, children: true },
       orderBy: (departments: any, { asc }: any) => asc(departments.name),
     });
   }),
 
-  getById: protectedProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
+  getById: companyProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
     return await ctx.db.query.departments.findFirst({
       where: eq(schema.tenant.departments.id, input),
       with: { head: true, children: { with: { head: true } }, parent: true, employees: true },
@@ -50,7 +50,7 @@ export const departmentRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  tree: protectedProcedure.query(async ({ ctx }) => {
+  tree: companyProcedure.query(async ({ ctx }) => {
     const all = await ctx.db.query.departments.findMany({ with: { head: true, employees: true } });
     const roots = all.filter((d: any) => !d.parentDepartmentId);
     const children = (parentId: string) =>

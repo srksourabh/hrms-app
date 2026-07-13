@@ -1,8 +1,8 @@
-# UDS-HR design system
+# Taāzur design system
 
 ## Product context
 
-UDS-HR is a Saudi HR & Payroll SaaS for MSMEs (5-250 employees). The design must signal trust, local authenticity (Saudi-first), and modern capability. Every visual choice is filtered through: "Would this feel right to an HR manager in Riyadh?"
+Taāzur is a Saudi HR & Payroll SaaS for MSMEs (5-250 employees). The design must signal trust, local authenticity (Saudi-first), and modern capability. Every visual choice is filtered through: "Would this feel right to an HR manager in Riyadh?"
 
 ---
 
@@ -160,7 +160,7 @@ Never convey status by color alone -- always include accompanying text.
 
 ## 6. AI interface patterns
 
-UDS-HR includes AI agents. These get distinct visual treatment:
+Taāzur includes AI agents. These get distinct visual treatment:
 
 - AI-generated content is shown in a subtle tinted card with a sparkle icon
 - Every AI action includes an explicit "undo" or "edit" affordance within reach

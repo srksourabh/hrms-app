@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, requireRole } from "../server";
+import { createTRPCRouter, companyProcedure, requireRole } from "../server";
 import { schema } from "@hrms-app/db";
 import { TRPCError } from "@trpc/server";
 import { and, eq, desc } from "drizzle-orm";
@@ -215,7 +215,7 @@ function takeDatePart(iso: string): string {
 }
 
 export const qiwaRouter = createTRPCRouter({
-  sync: protectedProcedure
+  sync: companyProcedure
     .input(
       z.object({
         employeeId: z.string().uuid(),
@@ -396,7 +396,7 @@ export const qiwaRouter = createTRPCRouter({
       };
     }),
 
-  list: protectedProcedure
+  list: companyProcedure
     .input(
       z.object({
         status: z.enum(["draft", "submitted", "accepted", "rejected", "terminated"]).optional(),
@@ -418,21 +418,21 @@ export const qiwaRouter = createTRPCRouter({
       return { contracts, nextCursor: contracts.length };
     }),
 
-  getById: protectedProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
+  getById: companyProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
     return await ctx.db.query.qiwaContracts.findFirst({
       where: eq(schema.tenant.qiwaContracts.id, input),
       with: { employee: true },
     });
   }),
 
-  getByEmployee: protectedProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
+  getByEmployee: companyProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
     return await ctx.db.query.qiwaContracts.findFirst({
       where: eq(schema.tenant.qiwaContracts.employeeId, input),
       with: { employee: true },
     });
   }),
 
-  testConnection: protectedProcedure.query(async () => {
+  testConnection: companyProcedure.query(async () => {
     const config = getQiwaConfig();
     if (!config) {
       return { connected: false, error: "Qiwa API credentials not configured" };
@@ -451,7 +451,7 @@ export const qiwaRouter = createTRPCRouter({
     }
   }),
 
-  dashboard: protectedProcedure.query(async ({ ctx }) => {
+  dashboard: companyProcedure.query(async ({ ctx }) => {
     const [total, submitted, accepted, rejected, terminated] = await Promise.all([
       ctx.db.query.qiwaContracts.count(),
       ctx.db.query.qiwaContracts.count({ where: eq(schema.tenant.qiwaContracts.status, "submitted") }),

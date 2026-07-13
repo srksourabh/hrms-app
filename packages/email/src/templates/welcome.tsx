@@ -8,14 +8,15 @@ import {
   Preview,
   Hr,
 } from "@react-email/components";
+import { productBrand } from "@hrms-app/config/brand";
 
 interface WelcomeEmailProps {
   userName: string;
-  appName: string;
+  appName?: string;
   dashboardUrl: string;
 }
 
-export function WelcomeEmail({ userName, appName, dashboardUrl }: WelcomeEmailProps) {
+export function WelcomeEmail({ userName, appName = productBrand.name, dashboardUrl }: WelcomeEmailProps) {
   return (
     <Html>
       <Head />

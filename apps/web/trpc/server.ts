@@ -2,9 +2,8 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 import { auth } from "@hrms-app/auth";
+import { canAccessProcedure } from "@hrms-app/auth/rbac";
 import { adminDb, getTenantDb, tenants } from "@hrms-app/db";
-
-
 
 export async function createTRPCContext(opts: { headers: Headers }) {
   const session = await auth();
@@ -15,9 +14,7 @@ export async function createTRPCContext(opts: { headers: Headers }) {
     const tenant = await adminDb.query.tenants.findFirst({
       where: (tenants, { eq }) => eq(tenants.id, tenantId),
     });
-    if (tenant) {
-      tenantDb = getTenantDb(tenant.schemaName);
-    }
+    if (tenant) tenantDb = getTenantDb(tenant.schemaName);
   }
 
   return {
@@ -47,13 +44,12 @@ const t = initTRPC.context<TRPCContext>().create({
 export const createTRPCRouter = t.router;
 export const publicProcedure = t.procedure;
 
-export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
-  if (!ctx.session?.user) {
-    throw new TRPCError({ code: "UNAUTHORIZED" });
+export const protectedProcedure = t.procedure.use(({ ctx, next, path }) => {
+  if (!ctx.session?.user) throw new TRPCError({ code: "UNAUTHORIZED" });
+  if (!canAccessProcedure(ctx.session.user.role, path)) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "This procedure is not available for your role" });
   }
-  if (!ctx.tenantDb) {
-    throw new TRPCError({ code: "UNAUTHORIZED", message: "No tenant context" });
-  }
+  if (!ctx.tenantDb) throw new TRPCError({ code: "UNAUTHORIZED", message: "No tenant context" });
   return next({
     ctx: {
       ...ctx,
@@ -63,17 +59,22 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
   });
 });
 
+export const companyProcedure = protectedProcedure.use(({ ctx, next }) => {
+  const role = ctx.user.role;
+  if (role === "employee" || role === "candidate") {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Company-wide data is not available for this role",
+    });
+  }
+  return next({ ctx });
+});
+
 export function requireRole(...roles: string[]) {
   return t.procedure.use(({ ctx, next }) => {
-    if (!ctx.session?.user) {
-      throw new TRPCError({ code: "UNAUTHORIZED" });
-    }
-    if (!ctx.tenantDb) {
-      throw new TRPCError({ code: "UNAUTHORIZED", message: "No tenant context" });
-    }
-    if (!roles.includes(ctx.session.user.role ?? "")) {
-      throw new TRPCError({ code: "FORBIDDEN" });
-    }
+    if (!ctx.session?.user) throw new TRPCError({ code: "UNAUTHORIZED" });
+    if (!ctx.tenantDb) throw new TRPCError({ code: "UNAUTHORIZED", message: "No tenant context" });
+    if (!roles.includes(ctx.session.user.role ?? "")) throw new TRPCError({ code: "FORBIDDEN" });
     return next({
       ctx: { ...ctx, user: ctx.session.user, db: ctx.tenantDb as any },
     });

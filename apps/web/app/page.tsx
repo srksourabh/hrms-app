@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@hrms-app/auth";
+import { can, type AppRole, type Capability } from "@hrms-app/auth/rbac";
+import { taazurEnergyDemo } from "@hrms-app/demo";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -20,6 +22,7 @@ import {
   Users,
 } from "lucide-react";
 import { DashboardShell } from "~/components/dashboard-shell";
+import { EmployeeCommandCenter } from "~/components/demo/employee-command-center";
 import { productModules, totalPrdFeatures } from "~/lib/module-catalog";
 
 const featuredSlugs = [
@@ -36,28 +39,46 @@ export default async function RootPage() {
 
   if (!session?.user) redirect("/login");
 
+  const isDemo = session.user.id.startsWith("demo-");
+  const isEmployee = session.user.role === "employee";
+
   return (
     <DashboardShell user={session.user} regulatoryContext={session.user.regulatoryContext ?? "saudi"} preferredLanguage={session.user.preferredLanguage ?? "en"}>
-      <CommandCenter userName={session.user.name ?? "HR Manager"} isDemo={session.user.email === "admin@demo.com"} />
+      {isEmployee && isDemo ? (
+        <EmployeeCommandCenter employeeId={session.user.employeeId} />
+      ) : (
+        <CommandCenter userName={session.user.name ?? "HR Manager"} isDemo={isDemo} role={session.user.role as AppRole} />
+      )}
     </DashboardShell>
   );
 }
 
-function CommandCenter({ userName, isDemo }: { userName: string; isDemo: boolean }) {
-  const featuredModules = productModules.filter((module) => featuredSlugs.includes(module.slug));
-  const metrics = isDemo
+const featuredCapability: Record<string, Capability> = {
+  "people-organization": "people:view_company",
+  "payroll-settlement": "payroll:view_company",
+  recruitment: "recruitment:view",
+  "nitaqat-compliance": "compliance:manage",
+  "ai-intelligence": "reports:view_company",
+  "performance-goals": "performance:view_team",
+};
+
+function CommandCenter({ userName, isDemo, role }: { userName: string; isDemo: boolean; role: AppRole }) {
+  const featuredModules = productModules.filter(
+    (module) => featuredSlugs.includes(module.slug) && can(role, featuredCapability[module.slug] ?? "dashboard:view_admin"),
+  );
+  const metrics = (isDemo
     ? [
-        { label: "Active people", value: "248", delta: "+12 this month", icon: Users, tone: "emerald" },
-        { label: "Payroll readiness", value: "96%", delta: "4 items to review", icon: BriefcaseBusiness, tone: "amber" },
-        { label: "Open positions", value: "18", delta: "67 candidates", icon: UserPlus, tone: "blue" },
-        { label: "Compliance score", value: "94", delta: "Healthy", icon: ShieldCheck, tone: "violet" },
+        { label: "Active people", value: String(taazurEnergyDemo.employees.filter((employee) => employee.status === "active").length), delta: "5 total profiles", icon: Users, tone: "emerald", capability: "people:view_company" as Capability },
+        { label: "Payroll readiness", value: "96%", delta: `${taazurEnergyDemo.payroll.anomalies.length} fixture item to review`, icon: BriefcaseBusiness, tone: "amber", capability: "payroll:view_company" as Capability },
+        { label: "Open positions", value: String(taazurEnergyDemo.recruitment.requisitions.length), delta: `${taazurEnergyDemo.recruitment.candidates.length} fictional candidate`, icon: UserPlus, tone: "blue", capability: "recruitment:view" as Capability },
+        { label: "Saudization scenario", value: `${taazurEnergyDemo.company.saudizationRate}%`, delta: `${taazurEnergyDemo.company.nitaqatBand} fixture`, icon: ShieldCheck, tone: "violet", capability: "compliance:manage" as Capability },
       ]
     : [
-        { label: "Active people", value: "—", delta: "Connect tenant data", icon: Users, tone: "emerald" },
-        { label: "Payroll readiness", value: "—", delta: "No active run", icon: BriefcaseBusiness, tone: "amber" },
-        { label: "Open positions", value: "—", delta: "Recruitment workspace", icon: UserPlus, tone: "blue" },
-        { label: "Compliance score", value: "—", delta: "Run health check", icon: ShieldCheck, tone: "violet" },
-      ];
+        { label: "Active people", value: "—", delta: "Connect tenant data", icon: Users, tone: "emerald", capability: "people:view_company" as Capability },
+        { label: "Payroll readiness", value: "—", delta: "No active run", icon: BriefcaseBusiness, tone: "amber", capability: "payroll:view_company" as Capability },
+        { label: "Open positions", value: "—", delta: "Recruitment workspace", icon: UserPlus, tone: "blue", capability: "recruitment:view" as Capability },
+        { label: "Compliance controls", value: "—", delta: "Run internal check", icon: ShieldCheck, tone: "violet", capability: "compliance:manage" as Capability },
+      ]).filter((metric) => can(role, metric.capability));
 
   const toneStyles: Record<string, string> = {
     emerald: "bg-emerald-50 text-emerald-800 ring-emerald-100",
@@ -70,8 +91,8 @@ function CommandCenter({ userName, isDemo }: { userName: string; isDemo: boolean
     <div className="space-y-6">
       {isDemo && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <div className="flex items-center gap-2"><Sparkles className="h-4 w-4" /><span><strong>Demo workspace:</strong> sample metrics are shown so you can explore the complete product experience.</span></div>
-          <Link href="/modules" className="font-semibold underline underline-offset-4">View all PRD modules</Link>
+          <div className="flex items-center gap-2"><Sparkles className="h-4 w-4" /><span><strong>Operational demo:</strong> {taazurEnergyDemo.company.name} uses five fictional employees across Riyadh and Dhahran.</span></div>
+          <Link href="/modules" className="font-semibold underline underline-offset-4">View all workspaces</Link>
         </div>
       )}
 
@@ -80,7 +101,7 @@ function CommandCenter({ userName, isDemo }: { userName: string; isDemo: boolean
         <div className="relative grid gap-8 xl:grid-cols-[1.35fr_.65fr] xl:items-end">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-semibold text-emerald-200">LIVE · Saudi operations</span>
+              <span className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-semibold text-emerald-200">OPERATIONAL DEMO · Saudi workflows</span>
               <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/55">13 July 2026</span>
             </div>
             <p className="mt-7 text-sm font-semibold text-amber-300">As-salāmu ʿalaykum · مرحباً</p>
@@ -88,23 +109,25 @@ function CommandCenter({ userName, isDemo }: { userName: string; isDemo: boolean
               Lead your workforce with clarity, {userName.split(" ")[0]}.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-white/60">
-              Payroll, talent, compliance and employee experience—connected in one Saudi-native operating system.
+              Explore payroll, talent, compliance and employee-experience workflows using fictional Saudi demo data.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link href="/modules" className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-100">
                 Explore all modules <Grid2X2 className="h-4 w-4" />
               </Link>
-              <Link href="/payroll/new" className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
-                Start payroll <ArrowUpRight className="h-4 w-4" />
-              </Link>
+              {can(role, "payroll:run") && (
+                <Link href="/payroll/new" className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
+                  Start payroll <ArrowUpRight className="h-4 w-4" />
+                </Link>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-2xl border border-white/10 bg-white/[0.055] p-4 backdrop-blur">
-              <p className="text-xs text-white/45">PRD coverage</p>
+              <p className="text-xs text-white/45">Catalogued requirements</p>
               <p className="mt-2 text-3xl font-semibold">{totalPrdFeatures}</p>
-              <p className="mt-1 text-xs text-emerald-200">features mapped</p>
+              <p className="mt-1 text-xs text-emerald-200">delivery requirements</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/[0.055] p-4 backdrop-blur">
               <p className="text-xs text-white/45">Workspaces</p>
@@ -112,9 +135,9 @@ function CommandCenter({ userName, isDemo }: { userName: string; isDemo: boolean
               <p className="mt-1 text-xs text-amber-200">across 5 phases</p>
             </div>
             <div className="col-span-2 rounded-2xl border border-emerald-300/15 bg-emerald-300/[0.07] p-4">
-              <div className="flex items-center justify-between"><span className="text-xs text-white/50">Kingdom compliance posture</span><CheckCircle2 className="h-4 w-4 text-emerald-300" /></div>
+              <div className="flex items-center justify-between"><span className="text-xs text-white/50">Demo readiness snapshot</span><CheckCircle2 className="h-4 w-4 text-emerald-300" /></div>
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full w-[94%] rounded-full bg-gradient-to-r from-emerald-400 to-amber-300" /></div>
-              <div className="mt-2 flex justify-between text-xs"><span className="text-white/45">Qiwa · GOSI · Nitaqat</span><strong>94 / 100</strong></div>
+              <div className="mt-2 flex justify-between text-xs"><span className="text-white/45">Fixture checks · no authority calls</span><strong>94 / 100 demo</strong></div>
             </div>
           </div>
         </div>
@@ -158,11 +181,11 @@ function CommandCenter({ userName, isDemo }: { userName: string; isDemo: boolean
           <div className="flex items-center justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-800">Attention</p><h2 className="mt-1 text-2xl font-semibold tracking-[-0.035em] text-slate-950">Priority queue</h2></div><CircleAlert className="h-5 w-5 text-amber-800" /></div>
           <div className="mt-6 space-y-3">
             {[
-              { title: "4 documents expire soon", meta: "Iqama & work permits", icon: FileCheck2, href: "/documents" },
-              { title: "Payroll pre-check required", meta: "June 2026 · 4 anomalies", icon: BriefcaseBusiness, href: "/payroll" },
-              { title: "3 leave approvals pending", meta: "Oldest request · 18 hours", icon: CalendarClock, href: "/leave" },
-              { title: "Nitaqat simulation ready", meta: "Hiring scenario · Riyadh", icon: Landmark, href: "/compliance" },
-            ].map((item) => {
+              { title: "2 fixture documents expire soon", meta: "HSE certificate and Iqama", icon: FileCheck2, href: "/documents", capability: "documents:view_company" as Capability },
+              { title: "Demo payroll pre-check required", meta: "June 2026 · 1 joining allowance", icon: BriefcaseBusiness, href: "/payroll", capability: "payroll:view_company" as Capability },
+              { title: "1 leave approval pending", meta: "Omar · Personal leave", icon: CalendarClock, href: "/leave", capability: "leave:approve" as Capability },
+              { title: "Nitaqat fixture scenario", meta: "80% illustrative rate · High Green fixture", icon: Landmark, href: "/compliance", capability: "compliance:manage" as Capability },
+            ].filter((item) => can(role, item.capability)).map((item) => {
               const Icon = item.icon;
               return (
                 <Link key={item.title} href={item.href} className="group flex items-center gap-3 rounded-2xl bg-white/75 p-3.5 transition hover:bg-white">
@@ -176,16 +199,18 @@ function CommandCenter({ userName, isDemo }: { userName: string; isDemo: boolean
         </article>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
-        {[
-          { label: "Qiwa contract alignment", value: "100%", icon: FileCheck2, color: "text-emerald-700" },
-          { label: "GOSI contribution status", value: "Current", icon: Building2, color: "text-sky-700" },
-          { label: "Mudad WPS readiness", value: "Ready", icon: Landmark, color: "text-amber-700" },
-        ].map((item) => {
-          const Icon = item.icon;
-          return <div key={item.label} className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4"><Icon className={`h-5 w-5 ${item.color}`} /><div className="flex-1"><p className="text-xs text-slate-400">{item.label}</p><p className="mt-0.5 text-sm font-semibold text-slate-900">{item.value}</p></div><CheckCircle2 className="h-4 w-4 text-emerald-500" /></div>;
-        })}
-      </section>
+      {can(role, "compliance:manage") && (
+        <section className="grid gap-4 md:grid-cols-3">
+          {[
+            { label: "Qiwa contract fixture", value: "Locally aligned", icon: FileCheck2, color: "text-emerald-700" },
+            { label: "GOSI calculation", value: "Legal validation required", icon: Building2, color: "text-sky-700" },
+            { label: "Mudad WPS adapter", value: "Mock only", icon: Landmark, color: "text-amber-700" },
+          ].map((item) => {
+            const Icon = item.icon;
+            return <div key={item.label} className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4"><Icon className={`h-5 w-5 ${item.color}`} /><div className="flex-1"><p className="text-xs text-slate-400">{item.label}</p><p className="mt-0.5 text-sm font-semibold text-slate-900">{item.value}</p></div><CheckCircle2 className="h-4 w-4 text-emerald-500" /></div>;
+          })}
+        </section>
+      )}
     </div>
   );
 }
