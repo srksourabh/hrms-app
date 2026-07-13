@@ -64,17 +64,9 @@ export default function LoginPage() {
         </section>
       </main>
 
-      {/* Bottom: trust strip + customer-demo manual download */}
-      <footer className="relative z-10 flex flex-col items-center justify-between gap-2 px-6 pb-4 text-center text-xs text-white/60 sm:flex-row sm:px-10 sm:text-left">
-        <span>Fictional customer demo · No production employee records · External integrations are simulated</span>
-        <a
-          href="/docs/customer-demo-manual/customer-demo-user-manual.pdf"
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-white/85 transition hover:border-[hsl(var(--saudi-gold))] hover:text-white"
-        >
-          Download customer demo manual · دليل العميل التجريبي
-        </a>
+      {/* Bottom: trust strip */}
+      <footer className="relative z-10 px-6 pb-4 text-center text-xs text-white/60 sm:px-10">
+        Fictional customer demo · No production employee records · External integrations are simulated
       </footer>
     </div>
   );
