@@ -68,10 +68,10 @@ function CommandCenter({ userName, isDemo, role }: { userName: string; isDemo: b
   );
   const metrics = (isDemo
     ? [
-        { label: "Active people", value: String(taazurEnergyDemo.employees.filter((employee) => employee.status === "active").length), delta: "5 total profiles", icon: Users, tone: "emerald", capability: "people:view_company" as Capability },
-        { label: "Payroll readiness", value: "96%", delta: `${taazurEnergyDemo.payroll.anomalies.length} fixture item to review`, icon: BriefcaseBusiness, tone: "amber", capability: "payroll:view_company" as Capability },
-        { label: "Open positions", value: String(taazurEnergyDemo.recruitment.requisitions.length), delta: `${taazurEnergyDemo.recruitment.candidates.length} fictional candidate`, icon: UserPlus, tone: "blue", capability: "recruitment:view" as Capability },
-        { label: "Saudization scenario", value: `${taazurEnergyDemo.company.saudizationRate}%`, delta: `${taazurEnergyDemo.company.nitaqatBand} fixture`, icon: ShieldCheck, tone: "violet", capability: "compliance:manage" as Capability },
+        { label: "Active people", value: String(taazurEnergyDemo.employees.filter((employee) => employee.status === "active").length), delta: "12 connected profiles", icon: Users, tone: "emerald", capability: "people:view_company" as Capability },
+        { label: "Payroll readiness", value: `${taazurEnergyDemo.payroll.runs.length} runs`, delta: `${taazurEnergyDemo.payroll.payslips.length} payslips · ${taazurEnergyDemo.payroll.anomalies.length} fixture item to review`, icon: BriefcaseBusiness, tone: "amber", capability: "payroll:view_company" as Capability },
+        { label: "Open positions", value: String(taazurEnergyDemo.recruitment.requisitions.length), delta: `${taazurEnergyDemo.recruitment.candidates.length} fictional candidate · ${taazurEnergyDemo.projects.length} projects`, icon: UserPlus, tone: "blue", capability: "recruitment:view" as Capability },
+        { label: "Saudization scenario", value: `${taazurEnergyDemo.company.saudizationRate}%`, delta: `${taazurEnergyDemo.company.nitaqatBand} · ${taazurEnergyDemo.departments.length} departments`, icon: ShieldCheck, tone: "violet", capability: "compliance:manage" as Capability },
       ]
     : [
         { label: "Active people", value: "—", delta: "Connect tenant data", icon: Users, tone: "emerald", capability: "people:view_company" as Capability },
@@ -91,7 +91,7 @@ function CommandCenter({ userName, isDemo, role }: { userName: string; isDemo: b
     <div className="space-y-6">
       {isDemo && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <div className="flex items-center gap-2"><Sparkles className="h-4 w-4" /><span><strong>Operational demo:</strong> {taazurEnergyDemo.company.name} uses five fictional employees across Riyadh and Dhahran.</span></div>
+          <div className="flex items-center gap-2"><Sparkles className="h-4 w-4" /><span><strong>Operational demo:</strong> {taazurEnergyDemo.company.name} uses twelve fictional employees across Riyadh, Dhahran, and Jubail, plus four projects and three payroll history months.</span></div>
           <Link href="/modules" className="font-semibold underline underline-offset-4">View all workspaces</Link>
         </div>
       )}
@@ -182,9 +182,9 @@ function CommandCenter({ userName, isDemo, role }: { userName: string; isDemo: b
           <div className="mt-6 space-y-3">
             {[
               { title: "2 fixture documents expire soon", meta: "HSE certificate and Iqama", icon: FileCheck2, href: "/documents", capability: "documents:view_company" as Capability },
-              { title: "Demo payroll pre-check required", meta: "June 2026 · 1 joining allowance", icon: BriefcaseBusiness, href: "/payroll", capability: "payroll:view_company" as Capability },
+              { title: "Demo payroll pre-check required", meta: `June 2026 · ${taazurEnergyDemo.payroll.payslips.length} payslips`, icon: BriefcaseBusiness, href: "/payroll", capability: "payroll:view_company" as Capability },
               { title: "1 leave approval pending", meta: "Omar · Personal leave", icon: CalendarClock, href: "/leave", capability: "leave:approve" as Capability },
-              { title: "Nitaqat fixture scenario", meta: "80% illustrative rate · High Green fixture", icon: Landmark, href: "/compliance", capability: "compliance:manage" as Capability },
+              { title: "Nitaqat fixture scenario", meta: `${taazurEnergyDemo.company.saudizationRate}% illustrative rate · High Green fixture`, icon: Landmark, href: "/compliance", capability: "compliance:manage" as Capability },
             ].filter((item) => can(role, item.capability)).map((item) => {
               const Icon = item.icon;
               return (

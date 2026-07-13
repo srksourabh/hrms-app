@@ -67,7 +67,7 @@ test.describe("Taāzur customer-demo journeys", () => {
     await loginAs(page, "admin");
     await expect(page.getByRole("heading", { name: /Lead your workforce with clarity/i })).toBeVisible();
     await expect(page.getByText(/Rukn Energy Services \(Demo\)/)).toBeVisible();
-    await expect(page.getByText("5 total profiles")).toBeVisible();
+    await expect(page.getByText("12 connected profiles")).toBeVisible();
 
     await page.goto("/modules");
     await expect(page.getByRole("heading", { name: /Every HR capability/i })).toBeVisible();
@@ -94,15 +94,19 @@ test.describe("Taāzur customer-demo journeys", () => {
     await loginAs(page, "admin");
     await page.goto("/modules/company-onboarding");
     await expect(page.getByRole("heading", { name: "Set up your Saudi company" })).toBeVisible();
-    await expect(page.getByText("Step 1 of 5")).toBeVisible();
+    await expect(page.getByText("Step 1 of 7")).toBeVisible();
     await expect(page.getByLabel("English legal name")).toHaveValue("Rukn Energy Services Company");
 
-    await page.getByRole("button", { name: "Continue to Saudi compliance" }).click();
-    await expect(page.getByText("Step 2 of 5")).toBeVisible();
-    await page.getByRole("button", { name: "Continue to branches and work" }).click();
-    await expect(page.getByText("2 configured branches")).toBeVisible();
-    await page.getByRole("button", { name: "Continue to payroll setup" }).click();
+    await page.getByRole("button", { name: /Continue to Saudi compliance/i }).click();
+    await expect(page.getByText("Step 2 of 7")).toBeVisible();
+    await page.getByRole("button", { name: /Continue to branches and work/i }).click();
+    await expect(page.getByText("3 configured branches")).toBeVisible();
+    await page.getByRole("button", { name: /Continue to organization and managers/i }).click();
+    await expect(page.getByText("5 sample departments")).toBeVisible();
+    await page.getByRole("button", { name: /Continue to payroll setup/i }).click();
     await expect(page.getByLabel("Payroll day")).toHaveValue("27");
+    await page.getByRole("button", { name: /Continue to projects and sample data/i }).click();
+    await expect(page.getByText("4 sample projects")).toBeVisible();
     await page.getByRole("button", { name: "Review company setup" }).click();
     await expect(page.getByText("100% ready")).toBeVisible();
 

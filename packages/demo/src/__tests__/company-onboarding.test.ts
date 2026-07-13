@@ -9,6 +9,15 @@ import {
 
 describe("company onboarding", () => {
   it("provides a fully valid Rukn Energy onboarding fixture", () => {
+    expect(companyOnboardingSteps.map((step) => step.id)).toEqual([
+      "company",
+      "compliance",
+      "locations",
+      "organization",
+      "payroll",
+      "sample_data",
+      "review",
+    ]);
     for (const step of companyOnboardingSteps) {
       expect(validateCompanyOnboardingStep(companyOnboardingFixture, step.id)).toEqual({});
     }
@@ -27,7 +36,7 @@ describe("company onboarding", () => {
 
     expect(activateCompanyOnboarding(incomplete)).toEqual({
       activated: false,
-      progress: 25,
+      progress: 50,
       blockedSteps: ["company", "locations", "payroll"],
       message: "Complete 3 onboarding steps before activation.",
     });
@@ -39,6 +48,14 @@ describe("company onboarding", () => {
       progress: 100,
       blockedSteps: [],
       activationReference: "ONB-DEMO-1010987654",
+      provisioningSummary: {
+        branches: 3,
+        departments: 5,
+        managers: 4,
+        employees: 12,
+        projects: 4,
+        payrollHistoryMonths: 3,
+      },
       message: "Company workspace activated for the operational demo.",
     });
   });

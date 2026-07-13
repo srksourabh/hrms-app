@@ -31,9 +31,19 @@ describe("operational demo workflows", () => {
     expect(Object.keys(demoWorkflows).sort()).toEqual([...expectedSlugs].sort());
     for (const workflow of Object.values(demoWorkflows)) {
       expect(workflow.metrics.length).toBeGreaterThanOrEqual(3);
-      expect(workflow.records.length).toBeGreaterThan(0);
+      expect(workflow.records.length).toBeGreaterThanOrEqual(3);
       expect(workflow.actions.length).toBeGreaterThan(0);
+      expect(workflow.summary).not.toMatch(/five-person/i);
     }
+  });
+
+  it("surfaces the expanded workforce, project, salary, and payroll samples", () => {
+    expect(demoWorkflows["people-organization"]?.metrics).toContainEqual(
+      expect.objectContaining({ label: "Employees", value: "12" }),
+    );
+    expect(demoWorkflows["company-onboarding"]?.records.some((item) => item.title.includes("5 departments"))).toBe(true);
+    expect(demoWorkflows["payroll-settlement"]?.records.some((item) => item.detail.includes("12 employees"))).toBe(true);
+    expect(demoWorkflows["people-analytics"]?.records.some((item) => item.title.includes("Projects"))).toBe(true);
   });
 
   it("labels every external-authority action as a mock operation", () => {

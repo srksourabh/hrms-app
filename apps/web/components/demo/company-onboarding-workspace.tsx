@@ -8,6 +8,7 @@ import {
   Check,
   CheckCircle2,
   Circle,
+  FolderKanban,
   Landmark,
   MapPin,
   Plus,
@@ -58,6 +59,7 @@ export function CompanyOnboardingWorkspace({ userName }: CompanyOnboardingWorksp
   const [notice, setNotice] = useState<string | null>(null);
 
   const currentStep = companyOnboardingSteps[stepIndex]!;
+
   const progress = useMemo(() => getCompanyOnboardingProgress(state), [state]);
 
   function updateCompany(patch: Partial<CompanyOnboardingState["company"]>) {
@@ -70,6 +72,14 @@ export function CompanyOnboardingWorkspace({ userName }: CompanyOnboardingWorksp
 
   function updatePayroll(patch: Partial<CompanyOnboardingState["payroll"]>) {
     setState((current) => ({ ...current, payroll: { ...current.payroll, ...patch } }));
+  }
+
+  function updateOrganization(patch: Partial<CompanyOnboardingState["organization"]>) {
+    setState((current) => ({ ...current, organization: { ...current.organization, ...patch } }));
+  }
+
+  function updateSampleData(patch: Partial<CompanyOnboardingState["sampleData"]>) {
+    setState((current) => ({ ...current, sampleData: { ...current.sampleData, ...patch } }));
   }
 
   function updateBranch(id: string, patch: Partial<CompanyOnboardingState["locations"]["branches"][number]>) {
@@ -115,6 +125,87 @@ export function CompanyOnboardingWorkspace({ userName }: CompanyOnboardingWorksp
     });
   }
 
+  function addDepartment() {
+    setState((current) => ({
+      ...current,
+      organization: {
+        ...current.organization,
+        departments: [
+          ...current.organization.departments,
+          {
+            id: `dept-${current.organization.departments.length + 1}`,
+            name: "New department",
+            costCenter: `CC-${Math.floor(Math.random() * 900 + 100)}`,
+            managerName: current.organization.managers[0]?.name ?? "Unassigned",
+            employeeCount: 1,
+          },
+        ],
+      },
+    }));
+  }
+
+  function updateDepartment(id: string, patch: Partial<CompanyOnboardingState["organization"]["departments"][number]>) {
+    setState((current) => ({
+      ...current,
+      organization: {
+        ...current.organization,
+        departments: current.organization.departments.map((department) =>
+          department.id === id ? { ...department, ...patch } : department,
+        ),
+      },
+    }));
+  }
+
+  function removeDepartment(id: string) {
+    setState((current) => ({
+      ...current,
+      organization: {
+        ...current.organization,
+        departments: current.organization.departments.filter((department) => department.id !== id),
+      },
+    }));
+  }
+
+  function addProject() {
+    setState((current) => ({
+      ...current,
+      sampleData: {
+        ...current.sampleData,
+        projects: [
+          ...current.sampleData.projects,
+          {
+            id: `project-${current.sampleData.projects.length + 1}`,
+            name: "New project",
+            managerName: current.organization.managers[0]?.name ?? "Project Manager",
+            status: "planning",
+          },
+        ],
+      },
+    }));
+  }
+
+  function updateProject(id: string, patch: Partial<CompanyOnboardingState["sampleData"]["projects"][number]>) {
+    setState((current) => ({
+      ...current,
+      sampleData: {
+        ...current.sampleData,
+        projects: current.sampleData.projects.map((project) =>
+          project.id === id ? { ...project, ...patch } : project,
+        ),
+      },
+    }));
+  }
+
+  function removeProject(id: string) {
+    setState((current) => ({
+      ...current,
+      sampleData: {
+        ...current.sampleData,
+        projects: current.sampleData.projects.filter((project) => project.id !== id),
+      },
+    }));
+  }
+
   function goForward() {
     const nextErrors = validateCompanyOnboardingStep(state, currentStep.id);
     setErrors(nextErrors);
@@ -138,12 +229,15 @@ export function CompanyOnboardingWorkspace({ userName }: CompanyOnboardingWorksp
     setNotice("Onboarding demo reset to the Rukn Energy fixture.");
   }
 
-  const nextLabels = [
-    "Continue to Saudi compliance",
-    "Continue to branches and work",
-    "Continue to payroll setup",
-    "Review company setup",
-  ];
+  const nextLabels: Record<string, string> = {
+    company: "Continue to Saudi compliance",
+    compliance: "Continue to branches and work",
+    locations: "Continue to organization and managers",
+    organization: "Continue to payroll setup",
+    payroll: "Continue to projects and sample data",
+    sample_data: "Review company setup",
+    review: "Activate company workspace",
+  };
 
   return (
     <div className="space-y-5">
@@ -157,7 +251,7 @@ export function CompanyOnboardingWorkspace({ userName }: CompanyOnboardingWorksp
             </div>
             <p className="mt-6 text-sm font-semibold text-emerald-300">Administration · تهيئة الشركة</p>
             <h1 className="mt-2 text-4xl font-semibold tracking-[-0.045em] sm:text-5xl">Set up your Saudi company</h1>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-white/60">Configure legal identity, Saudi compliance, operating branches, payroll controls, and allowances before activating an isolated tenant workspace.</p>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-white/60">Configure legal identity, Saudi compliance, operating branches, organization, payroll controls, and connected sample projects before activating an isolated tenant workspace.</p>
           </div>
           <button type="button" onClick={reset} className="inline-flex items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold transition hover:bg-white/10">
             Reset fixture <RotateCcw className="h-4 w-4" />
@@ -253,6 +347,51 @@ export function CompanyOnboardingWorkspace({ userName }: CompanyOnboardingWorksp
             </div>
           )}
 
+          {currentStep.id === "organization" && (
+            <div className="mt-6 space-y-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm text-slate-500">{state.organization.departments.length} sample departments · {state.organization.managers.length} people managers · {state.organization.employeeCount} employees</p>
+                  <p className="mt-1 text-xs text-slate-400">Departments, reporting lines, and connected employee records ready for the fixture.</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Field
+                    label="Total employees"
+                    type="number"
+                    min={3}
+                    value={state.organization.employeeCount}
+                    onChange={(event) => updateOrganization({ employeeCount: Number(event.target.value) })}
+                    className="w-32"
+                    error={errors.employeeCount}
+                  />
+                  <button type="button" onClick={addDepartment} className="inline-flex items-center gap-2 self-end rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white"><Plus className="h-4 w-4" /> Add department</button>
+                </div>
+              </div>
+              {(errors.departments || errors.managers || errors.departmentHeadcount || errors.departmentDetails) && (
+                <p className="text-sm text-rose-700">{errors.departments ?? errors.managers ?? errors.departmentHeadcount ?? errors.departmentDetails}</p>
+              )}
+              <div className="space-y-3">
+                {state.organization.departments.map((department, index) => (
+                  <article key={department.id} className="rounded-2xl border border-slate-200 p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><Building2 className="h-4 w-4" /></span><div><p className="text-sm font-semibold">Department {index + 1}</p><p className="text-xs text-slate-400">{department.costCenter}</p></div></div>
+                      <button type="button" onClick={() => removeDepartment(department.id)} aria-label={`Remove ${department.name}`} className="rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-700"><Trash2 className="h-4 w-4" /></button>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-4">
+                      <Field label="Department name" value={department.name} onChange={(event) => updateDepartment(department.id, { name: event.target.value })} />
+                      <Field label="Cost center" value={department.costCenter} onChange={(event) => updateDepartment(department.id, { costCenter: event.target.value })} />
+                      <Field label="Manager" value={department.managerName} onChange={(event) => updateDepartment(department.id, { managerName: event.target.value })} />
+                      <Field label="Headcount" type="number" min={1} value={department.employeeCount} onChange={(event) => updateDepartment(department.id, { employeeCount: Number(event.target.value) })} />
+                    </div>
+                  </article>
+                ))}
+              </div>
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-xs leading-5 text-emerald-950">
+                <strong>Demo seeding:</strong> Each department wires to existing Rukn Energy managers and shares the connected {state.organization.employeeCount}-person workforce used across every workspace.
+              </div>
+            </div>
+          )}
+
           {currentStep.id === "payroll" && (
             <div className="mt-6 grid gap-5 md:grid-cols-2">
               <Field label="Payroll bank" value={state.payroll.bankName} onChange={(event) => updatePayroll({ bankName: event.target.value })} error={errors.bankName} />
@@ -267,9 +406,74 @@ export function CompanyOnboardingWorkspace({ userName }: CompanyOnboardingWorksp
             </div>
           )}
 
+          {currentStep.id === "sample_data" && (
+            <div className="mt-6 space-y-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm text-slate-500">{state.sampleData.projects.length} sample projects · {state.sampleData.payrollHistoryMonths} payroll history months</p>
+                  <p className="mt-1 text-xs text-slate-400">Seeds deterministic salary, benefits, attendance, leave, document, and project records.</p>
+                </div>
+                <button type="button" onClick={addProject} className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white"><Plus className="h-4 w-4" /> Add project</button>
+              </div>
+              {(errors.projects || errors.projectDetails) && <p className="text-sm text-rose-700">{errors.projects ?? errors.projectDetails}</p>}
+              <div className="space-y-3">
+                {state.sampleData.projects.map((project, index) => (
+                  <article key={project.id} className="rounded-2xl border border-slate-200 p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><FolderKanban className="h-4 w-4" /></span><div><p className="text-sm font-semibold">Project {index + 1}</p><p className="text-xs text-slate-400 capitalize">{project.status.replace("_", " ")}</p></div></div>
+                      <button type="button" onClick={() => removeProject(project.id)} aria-label={`Remove ${project.name}`} className="rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-700"><Trash2 className="h-4 w-4" /></button>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-3">
+                      <Field label="Project name" value={project.name} onChange={(event) => updateProject(project.id, { name: event.target.value })} />
+                      <Field label="Project manager" value={project.managerName} onChange={(event) => updateProject(project.id, { managerName: event.target.value })} />
+                      <label className="block space-y-2 text-sm font-medium text-slate-700">
+                        <span>Status</span>
+                        <select
+                          value={project.status}
+                          onChange={(event) => updateProject(project.id, { status: event.target.value as "active" | "planning" })}
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-950 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+                        >
+                          <option value="active">Active</option>
+                          <option value="planning">Planning</option>
+                        </select>
+                      </label>
+                    </div>
+                  </article>
+                ))}
+              </div>
+              <div className="grid gap-3 md:grid-cols-3">
+                <label className="flex items-center gap-2 rounded-2xl border border-slate-200 p-4 text-sm font-medium text-slate-700">
+                  <input type="checkbox" checked={state.sampleData.includePayrollHistory} onChange={(event) => updateSampleData({ includePayrollHistory: event.target.checked })} className="h-4 w-4 accent-emerald-700" />
+                  Seed payroll history
+                </label>
+                <label className="flex items-center gap-2 rounded-2xl border border-slate-200 p-4 text-sm font-medium text-slate-700">
+                  <input type="checkbox" checked={state.sampleData.includeAttendance} onChange={(event) => updateSampleData({ includeAttendance: event.target.checked })} className="h-4 w-4 accent-emerald-700" />
+                  Seed attendance
+                </label>
+                <label className="flex items-center gap-2 rounded-2xl border border-slate-200 p-4 text-sm font-medium text-slate-700">
+                  <input type="checkbox" checked={state.sampleData.includeLeave} onChange={(event) => updateSampleData({ includeLeave: event.target.checked })} className="h-4 w-4 accent-emerald-700" />
+                  Seed leave records
+                </label>
+                <label className="flex items-center gap-2 rounded-2xl border border-slate-200 p-4 text-sm font-medium text-slate-700">
+                  <input type="checkbox" checked={state.sampleData.includeDocuments} onChange={(event) => updateSampleData({ includeDocuments: event.target.checked })} className="h-4 w-4 accent-emerald-700" />
+                  Seed documents
+                </label>
+                <label className="flex items-center gap-2 rounded-2xl border border-slate-200 p-4 text-sm font-medium text-slate-700">
+                  <input type="checkbox" checked={state.sampleData.includeBenefits} onChange={(event) => updateSampleData({ includeBenefits: event.target.checked })} className="h-4 w-4 accent-emerald-700" />
+                  Seed benefits
+                </label>
+                <label className="flex items-center gap-2 rounded-2xl border border-slate-200 p-4 text-sm font-medium text-slate-700">
+                  <input type="checkbox" checked={state.sampleData.includeAssets} onChange={(event) => updateSampleData({ includeAssets: event.target.checked })} className="h-4 w-4 accent-emerald-700" />
+                  Seed assets
+                </label>
+              </div>
+              <Field label="Payroll history months" type="number" min={1} max={12} value={state.sampleData.payrollHistoryMonths} onChange={(event) => updateSampleData({ payrollHistoryMonths: Number(event.target.value) })} error={errors.payrollHistoryMonths} className="max-w-[14rem]" />
+            </div>
+          )}
+
           {currentStep.id === "review" && (
             <div className="mt-6 space-y-5">
-              <div className="grid gap-3 sm:grid-cols-3"><div className="rounded-2xl bg-emerald-50 p-5"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Readiness</p><p className="mt-2 text-3xl font-semibold text-emerald-950">{progress}% ready</p></div><div className="rounded-2xl bg-slate-50 p-5"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Branches</p><p className="mt-2 text-3xl font-semibold text-slate-950">{state.locations.branches.length}</p></div><div className="rounded-2xl bg-[#eee9dc] p-5"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-800">Payroll day</p><p className="mt-2 text-3xl font-semibold text-slate-950">{state.payroll.payrollDay}</p></div></div>
+              <div className="grid gap-3 sm:grid-cols-4"><div className="rounded-2xl bg-emerald-50 p-5"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Readiness</p><p className="mt-2 text-3xl font-semibold text-emerald-950">{progress}% ready</p></div><div className="rounded-2xl bg-slate-50 p-5"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Branches</p><p className="mt-2 text-3xl font-semibold text-slate-950">{state.locations.branches.length}</p></div><div className="rounded-2xl bg-[#eee9dc] p-5"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-800">Payroll day</p><p className="mt-2 text-3xl font-semibold text-slate-950">{state.payroll.payrollDay}</p></div><div className="rounded-2xl bg-sky-50 p-5"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-700">Sample projects</p><p className="mt-2 text-3xl font-semibold text-slate-950">{state.sampleData.projects.length}</p></div></div>
               <div className="grid gap-4 lg:grid-cols-2">
                 <article className="rounded-2xl border border-slate-200 p-5"><Building2 className="h-5 w-5 text-emerald-700" /><h3 className="mt-3 font-semibold text-slate-950">{state.company.legalNameEn}</h3><p className="mt-1 text-sm text-slate-500" dir="rtl">{state.company.legalNameAr}</p><dl className="mt-4 grid grid-cols-2 gap-3 text-xs"><div><dt className="text-slate-400">CR</dt><dd className="mt-1 font-semibold">{state.company.crNumber}</dd></div><div><dt className="text-slate-400">Unified no.</dt><dd className="mt-1 font-semibold">{state.company.unifiedNumber}</dd></div></dl></article>
                 <article className="rounded-2xl border border-slate-200 p-5"><ShieldCheck className="h-5 w-5 text-emerald-700" /><h3 className="mt-3 font-semibold text-slate-950">Saudi compliance profile</h3><p className="mt-1 text-sm text-slate-500">{state.compliance.nitaqatActivity}</p><p className="mt-4 text-xs text-slate-400">Saudization target</p><p className="mt-1 text-lg font-semibold">{state.compliance.saudizationTarget}%</p></article>
@@ -283,7 +487,7 @@ export function CompanyOnboardingWorkspace({ userName }: CompanyOnboardingWorksp
             {currentStep.id === "review" ? (
               <button type="button" onClick={activate} disabled={Boolean(activationReference)} className="inline-flex items-center gap-2 rounded-full bg-emerald-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/10 transition hover:bg-emerald-800 disabled:bg-emerald-900"><ShieldCheck className="h-4 w-4" /> {activationReference ? "Company workspace activated" : "Activate company workspace"}</button>
             ) : (
-              <button type="button" onClick={goForward} className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-emerald-800">{nextLabels[stepIndex]} <ArrowRight className="h-4 w-4" /></button>
+              <button type="button" onClick={goForward} className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-emerald-800">{nextLabels[currentStep.id] ?? "Continue"} <ArrowRight className="h-4 w-4" /></button>
             )}
           </div>
         </div>
