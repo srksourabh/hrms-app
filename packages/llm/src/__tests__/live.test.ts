@@ -85,9 +85,10 @@ runIf("@hrms-app/llm live smoke test", () => {
     }
     if (!r) {
         // 503 = provider capacity issue, not a wiring bug — skip cleanly.
-        const msg = String(lastErr?.message ?? "");
+        const err2 = lastErr as { message?: string } | null;
+        const msg = String(err2?.message ?? "");
         if (msg.includes("503") || msg.includes("UNAVAILABLE")) {
-          console.warn(`[live smoke test] ${r?.provider ?? "provider"} returned 503 — skipping (provider outage, not a code bug)`);
+          console.warn(`[live smoke test] provider returned 503 — skipping (provider outage, not a code bug): ${msg}`);
           return;
         }
         throw lastErr ?? new Error("LLM call failed without a response");
