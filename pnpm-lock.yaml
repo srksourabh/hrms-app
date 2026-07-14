@@ -36,6 +36,9 @@ importers:
       '@hrms-app/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@hrms-app/date':
+        specifier: workspace:*
+        version: link:../../packages/date
       '@hrms-app/db':
         specifier: workspace:*
         version: link:../../packages/db

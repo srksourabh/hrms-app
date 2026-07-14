@@ -14,9 +14,10 @@
   "dependencies": {
     "@hrms-app/auth": "workspace:*",
     "@hrms-app/config": "workspace:*",
-    "@hrms-app/db": "workspace:*",
-    "@hrms-app/demo": "workspace:*",
-    "@hrms-app/documents": "workspace:*",
+        "@hrms-app/db": "workspace:*",
+        "@hrms-app/demo": "workspace:*",
+        "@hrms-app/date": "workspace:*",
+        "@hrms-app/documents": "workspace:*",
     "@hrms-app/email": "workspace:*",
     "@hrms-app/leave": "workspace:*",
     "@hrms-app/payroll": "workspace:*",
