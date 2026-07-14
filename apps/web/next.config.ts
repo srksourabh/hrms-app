@@ -33,6 +33,7 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["@hrms-app/ui", "lucide-react"],
   },
+  compress: true,
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
