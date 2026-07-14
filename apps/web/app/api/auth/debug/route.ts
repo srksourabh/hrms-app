@@ -3,6 +3,7 @@ export async function GET() {
   const authUrl = process.env.AUTH_URL;
   const nextAuthUrl = process.env.NEXTAUTH_URL;
   const dbUrl = process.env.DATABASE_URL;
+  const demoMode = process.env.DEMO_MODE;
 
   let dbHost = "unknown";
   let dbPort = "unknown";
@@ -23,5 +24,7 @@ export async function GET() {
     dbHost,
     dbPort,
     nodeEnv: process.env.NODE_ENV,
+    demoModeValue: demoMode ?? "not set",
+    demoModeIsTrue: demoMode === "true",
   });
 }

@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { auth } from "@hrms-app/auth";
 import { can, type AppRole, type Capability } from "@hrms-app/auth/rbac";
 import { taazurEnergyDemo } from "@hrms-app/demo";
+import { adminDb, getTenantDb, tenants } from "@hrms-app/db";
+import { eq, sql } from "drizzle-orm";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -23,7 +25,6 @@ import {
 import { DashboardShell } from "~/components/dashboard-shell";
 import { EmployeeCommandCenter } from "~/components/demo/employee-command-center";
 import { productModules, totalPrdFeatures } from "~/lib/module-catalog";
-import { api } from "~/trpc/react";
 
 const featuredSlugs = [
   "people-organization",
@@ -34,6 +35,14 @@ const featuredSlugs = [
   "performance-goals",
 ];
 
+interface DbCounts {
+  activeCount: number;
+  departmentCount: number;
+  openJobsCount: number;
+  totalHeadcount: number;
+  payslipCount: number;
+}
+
 export default async function RootPage() {
   const session = await auth();
 
@@ -42,12 +51,43 @@ export default async function RootPage() {
   const isDemo = session.user.id.startsWith("demo-");
   const isEmployee = session.user.role === "employee";
 
+  // Fetch counts from the database on the server side
+  let dbCounts: DbCounts | null = null;
+  if (session.user.tenantId) {
+    try {
+      const tenant = await adminDb.query.tenants.findFirst({
+        where: eq(tenants.id, session.user.tenantId),
+      });
+
+      if (tenant) {
+        const tenantDb = getTenantDb(tenant.schemaName);
+        const [empCount] = await tenantDb.execute(sql`SELECT COUNT(*)::int as count FROM ${sql.identifier(tenant.schemaName)}."employees" WHERE "employment_status" = 'active'`);
+        const [deptCount] = await tenantDb.execute(sql`SELECT COUNT(*)::int as count FROM ${sql.identifier(tenant.schemaName)}."departments"`);
+        const [jobCount] = await tenantDb.execute(sql`SELECT COUNT(*)::int as count FROM ${sql.identifier(tenant.schemaName)}."job_requisitions" WHERE "status" = 'open'`);
+        const [totalHeadcount] = await tenantDb.execute(sql`SELECT COUNT(*)::int as count FROM ${sql.identifier(tenant.schemaName)}."employees"`);
+        const [payslipCount] = await tenantDb.execute(sql`SELECT COUNT(*)::int as count FROM ${sql.identifier(tenant.schemaName)}."payslips"`);
+
+        if (totalHeadcount && Number(totalHeadcount.count) > 0) {
+          dbCounts = {
+            activeCount: Number(empCount?.count ?? 0),
+            departmentCount: Number(deptCount?.count ?? 0),
+            openJobsCount: Number(jobCount?.count ?? 0),
+            totalHeadcount: Number(totalHeadcount?.count ?? 0),
+            payslipCount: Number(payslipCount?.count ?? 0),
+          };
+        }
+      }
+    } catch (err) {
+      console.error("[RootPage] Server-side count fetching error:", err);
+    }
+  }
+
   return (
     <DashboardShell user={session.user} regulatoryContext={session.user.regulatoryContext ?? "saudi"} preferredLanguage={session.user.preferredLanguage ?? "en"}>
       {isEmployee && isDemo ? (
         <EmployeeCommandCenter employeeId={session.user.employeeId} />
       ) : (
-        <CommandCenter userName={session.user.name ?? "HR Manager"} role={session.user.role as AppRole} />
+        <CommandCenter userName={session.user.name ?? "HR Manager"} role={session.user.role as AppRole} dbCounts={dbCounts} />
       )}
     </DashboardShell>
   );
@@ -62,36 +102,21 @@ const featuredCapability: Record<string, Capability> = {
   "performance-goals": "performance:view_team",
 };
 
-function CommandCenter({ userName, role }: { userName: string; role: AppRole }) {
-  // Read live counts from the database. Falls back to the demo fixture
-  // if the database has not been seeded yet (e.g. fresh tenant).
-  const employeesQuery = api.employee.list.useQuery({ status: "active" });
-  const allEmployeesQuery = api.employee.list.useQuery({});
-  const departmentsQuery = api.department.list.useQuery();
-  const jobsQuery = api.recruitment.jobRequisition.list.useQuery({ status: "open" });
-
-  const liveEmployees: any[] = employeesQuery.data?.items ?? allEmployeesQuery.data ?? [];
-  const liveDepartments: any[] = departmentsQuery.data?.items ?? [];
-  const liveOpenJobs: any[] = jobsQuery.data?.items ?? [];
-
-  const dbIsSeeded = liveEmployees.length > 0;
-  const empList = dbIsSeeded ? liveEmployees : taazurEnergyDemo.employees;
-  const deptList = dbIsSeeded ? liveDepartments : taazurEnergyDemo.departments;
-  const openJobs = dbIsSeeded ? liveOpenJobs : taazurEnergyDemo.recruitment.requisitions;
-
-  const activeCount = dbIsSeeded
-    ? empList.filter((e: any) => e.employmentStatus === "active" || e.employment_status === "active").length
-    : taazurEnergyDemo.employees.filter((e) => e.status === "active").length;
-  const totalHeadcount = dbIsSeeded ? empList.length : taazurEnergyDemo.employees.length;
-  const departmentCount = dbIsSeeded ? deptList.length : taazurEnergyDemo.departments.length;
-
+function CommandCenter({ userName, role, dbCounts }: { userName: string; role: AppRole; dbCounts: DbCounts | null }) {
   const featuredModules = productModules.filter(
     (module) => featuredSlugs.includes(module.slug) && can(role, featuredCapability[module.slug] ?? "dashboard:view_admin"),
   );
+
+  const activeCount = dbCounts ? dbCounts.activeCount : taazurEnergyDemo.employees.filter((employee) => employee.status === "active").length;
+  const totalHeadcount = dbCounts ? dbCounts.totalHeadcount : taazurEnergyDemo.employees.length;
+  const departmentCount = dbCounts ? dbCounts.departmentCount : taazurEnergyDemo.departments.length;
+  const openJobsCount = dbCounts ? dbCounts.openJobsCount : taazurEnergyDemo.recruitment.requisitions.length;
+  const payslipsCount = dbCounts ? dbCounts.payslipCount : taazurEnergyDemo.payroll.payslips.length;
+
   const metrics = [
     { label: "Active people", value: String(activeCount), delta: `${departmentCount} departments · ${taazurEnergyDemo.branches.length} branches`, icon: Users, tone: "emerald", capability: "people:view_company" as Capability },
-    { label: "Payroll run", value: `SAR ${(taazurEnergyDemo.payroll.net / 1000).toFixed(0)}k`, delta: `${taazurEnergyDemo.payroll.payslips.length} payslips · ${taazurEnergyDemo.payroll.anomalies.length} to review`, icon: BriefcaseBusiness, tone: "amber", capability: "payroll:view_company" as Capability },
-    { label: "Open positions", value: String(openJobs.length), delta: `${taazurEnergyDemo.recruitment.candidates.length} candidates · ${taazurEnergyDemo.projects.length} projects`, icon: UserPlus, tone: "blue", capability: "recruitment:view" as Capability },
+    { label: "Payroll run", value: `SAR ${(taazurEnergyDemo.payroll.net / 1000).toFixed(0)}k`, delta: `${payslipsCount} payslips · ${taazurEnergyDemo.payroll.anomalies.length} to review`, icon: BriefcaseBusiness, tone: "amber", capability: "payroll:view_company" as Capability },
+    { label: "Open positions", value: String(openJobsCount), delta: `${taazurEnergyDemo.recruitment.candidates.length} candidates · ${taazurEnergyDemo.projects.length} projects`, icon: UserPlus, tone: "blue", capability: "recruitment:view" as Capability },
     { label: "Saudization", value: `${taazurEnergyDemo.company.saudizationRate}%`, delta: `${taazurEnergyDemo.company.nitaqatBand} band · this month`, icon: ShieldCheck, tone: "violet", capability: "compliance:manage" as Capability },
   ].filter((metric) => can(role, metric.capability));
 
@@ -113,7 +138,7 @@ function CommandCenter({ userName, role }: { userName: string; role: AppRole }) 
             </h1>
             <p className="mt-2 text-sm leading-7 text-slate-600 max-w-2xl">
               {totalHeadcount} active people across {taazurEnergyDemo.branches.length} branches and {departmentCount} departments.
-              {dbIsSeeded ? " Live data from Supabase." : " Demo data (database not yet seeded)."} Today is {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}.
+              {dbCounts ? " Live data from Supabase." : " Fictional demo data."} Today is {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}.
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <Link href="/employees/new" className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-900">
