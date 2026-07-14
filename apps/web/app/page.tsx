@@ -23,6 +23,7 @@ import {
 import { DashboardShell } from "~/components/dashboard-shell";
 import { EmployeeCommandCenter } from "~/components/demo/employee-command-center";
 import { productModules, totalPrdFeatures } from "~/lib/module-catalog";
+import { api } from "~/trpc/react";
 
 const featuredSlugs = [
   "people-organization",
@@ -62,13 +63,35 @@ const featuredCapability: Record<string, Capability> = {
 };
 
 function CommandCenter({ userName, role }: { userName: string; role: AppRole }) {
+  // Read live counts from the database. Falls back to the demo fixture
+  // if the database has not been seeded yet (e.g. fresh tenant).
+  const employeesQuery = api.employee.list.useQuery({ status: "active" });
+  const allEmployeesQuery = api.employee.list.useQuery({});
+  const departmentsQuery = api.department.list.useQuery();
+  const jobsQuery = api.recruitment.jobRequisition.list.useQuery({ status: "open" });
+
+  const liveEmployees: any[] = employeesQuery.data?.items ?? allEmployeesQuery.data ?? [];
+  const liveDepartments: any[] = departmentsQuery.data?.items ?? [];
+  const liveOpenJobs: any[] = jobsQuery.data?.items ?? [];
+
+  const dbIsSeeded = liveEmployees.length > 0;
+  const empList = dbIsSeeded ? liveEmployees : taazurEnergyDemo.employees;
+  const deptList = dbIsSeeded ? liveDepartments : taazurEnergyDemo.departments;
+  const openJobs = dbIsSeeded ? liveOpenJobs : taazurEnergyDemo.recruitment.requisitions;
+
+  const activeCount = dbIsSeeded
+    ? empList.filter((e: any) => e.employmentStatus === "active" || e.employment_status === "active").length
+    : taazurEnergyDemo.employees.filter((e) => e.status === "active").length;
+  const totalHeadcount = dbIsSeeded ? empList.length : taazurEnergyDemo.employees.length;
+  const departmentCount = dbIsSeeded ? deptList.length : taazurEnergyDemo.departments.length;
+
   const featuredModules = productModules.filter(
     (module) => featuredSlugs.includes(module.slug) && can(role, featuredCapability[module.slug] ?? "dashboard:view_admin"),
   );
   const metrics = [
-    { label: "Active people", value: String(taazurEnergyDemo.employees.filter((employee) => employee.status === "active").length), delta: `${taazurEnergyDemo.departments.length} departments · ${taazurEnergyDemo.branches.length} branches`, icon: Users, tone: "emerald", capability: "people:view_company" as Capability },
+    { label: "Active people", value: String(activeCount), delta: `${departmentCount} departments · ${taazurEnergyDemo.branches.length} branches`, icon: Users, tone: "emerald", capability: "people:view_company" as Capability },
     { label: "Payroll run", value: `SAR ${(taazurEnergyDemo.payroll.net / 1000).toFixed(0)}k`, delta: `${taazurEnergyDemo.payroll.payslips.length} payslips · ${taazurEnergyDemo.payroll.anomalies.length} to review`, icon: BriefcaseBusiness, tone: "amber", capability: "payroll:view_company" as Capability },
-    { label: "Open positions", value: String(taazurEnergyDemo.recruitment.requisitions.length), delta: `${taazurEnergyDemo.recruitment.candidates.length} candidates · ${taazurEnergyDemo.projects.length} projects`, icon: UserPlus, tone: "blue", capability: "recruitment:view" as Capability },
+    { label: "Open positions", value: String(openJobs.length), delta: `${taazurEnergyDemo.recruitment.candidates.length} candidates · ${taazurEnergyDemo.projects.length} projects`, icon: UserPlus, tone: "blue", capability: "recruitment:view" as Capability },
     { label: "Saudization", value: `${taazurEnergyDemo.company.saudizationRate}%`, delta: `${taazurEnergyDemo.company.nitaqatBand} band · this month`, icon: ShieldCheck, tone: "violet", capability: "compliance:manage" as Capability },
   ].filter((metric) => can(role, metric.capability));
 
@@ -89,8 +112,8 @@ function CommandCenter({ userName, role }: { userName: string; role: AppRole }) 
               Good morning, {userName.split(" ")[0]}.
             </h1>
             <p className="mt-2 text-sm leading-7 text-slate-600 max-w-2xl">
-              {taazurEnergyDemo.employees.length} active people across {taazurEnergyDemo.branches.length} branches and {taazurEnergyDemo.departments.length} departments.
-              Today is {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}.
+              {totalHeadcount} active people across {taazurEnergyDemo.branches.length} branches and {departmentCount} departments.
+              {dbIsSeeded ? " Live data from Supabase." : " Demo data (database not yet seeded)."} Today is {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}.
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <Link href="/employees/new" className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-900">
