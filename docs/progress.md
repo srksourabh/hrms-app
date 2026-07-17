@@ -225,5 +225,5 @@ Password for all accounts: `Rukn2026!`.
 
 ### Deploy — 2026-07-17 (follow-up)
 
-- Push the new commit to `master`.
-- Vercel preview URL will be regenerated; smoke-test the four flows end-to-end before promoting to production.
+- Commit `792be08` pushed to `master`.
+- Vercel preview deployment: `https://hrms-ezliool9u-srksourabhs-projects.vercel.app` (HTTP 200 on `/login`).
