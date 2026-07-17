@@ -4,7 +4,7 @@
 > **Platform attribution:** powered by UDS-Noon JV
 > **Delivery mode:** Single-agent, resumable, evidence-based
 > **Plan:** `.hermes/plans/2026-07-13_085441-taazur-customer-demo-shipment.md`
-> **Last updated:** 2026-07-17 after statutory-figures deep research and orchestrator-driven payroll
+> **Last updated:** 2026-07-17 after production-readiness pass (employee-link fix, floating chatbot, leaflet location, organogram wiring, sample-credential login)
 
 ## Status vocabulary
 
@@ -227,3 +227,104 @@ Password for all accounts: `Rukn2026!`.
 
 - Commit `792be08` pushed to `master`.
 - Vercel preview deployment: `https://hrms-ezliool9u-srksourabhs-projects.vercel.app` (HTTP 200 on `/login`).
+
+## Production-readiness pass — 2026-07-17 (round 2)
+
+### What changed
+
+1. **Employee-not-connected bug fixed.** The `authorize()` callback in
+   `packages/auth/src/index.ts` used to drop `employeeId` from the
+   user object it returned, so every employee-role sign-in produced a
+   JWT without `employeeId`. Added `employeeId: user.employeeId ?? undefined`
+   to the return shape. The `jwt()` callback also re-hydrates
+   `employeeId` from the DB on subsequent requests so any pre-existing
+   tokens get fixed automatically the next time the user signs in.
+
+   **Production verification** at `https://hrms-app-chi.vercel.app`:
+
+   ```
+   POST /api/auth/callback/credentials  →  302 redirect
+   GET  /api/auth/session
+   → {"user":{"name":"Omar Al-Dossary","email":"omar.aldossary@rukn-energy.example",
+       "id":"75736572-0000-5000-8000-000000000004","role":"employee",
+       "tenantId":"1ed8b6bd-3743-5000-8000-000000000001",
+       "employeeId":"41f58f2a-f94f-5bf3-8b05-76aaf4b89190",
+       "regulatoryContext":"saudi","preferredLanguage":"en"},"expires":"…"}
+   ```
+
+   `employeeId` is now populated; `attendance.today`,
+   `attendance.myHistory`, `attendance.myMonthlySummary`,
+   `payroll.payslip.list` and `employee.getById` all work for the
+   employee role.
+
+2. **Direct demo-login buttons removed.** `apps/web/app/(auth)/login/login-form.tsx`
+   no longer surfaces the four coloured "HR Manager / HR Specialist /
+   Department Manager / Employee" demo cards. The form is now a single
+   email + password panel. Below it, a collapsible "Show sample
+   credentials" reveals the four Rukn Energy sample users and the
+   shared password (`Rukn2026!`) so a prospect can copy an account
+   into the form.
+
+3. **Floating AI help chatbot** (`apps/web/components/floating-chatbot.tsx`,
+   mounted in `dashboard-shell.tsx`). Sparkle button at the bottom-right
+   of every dashboard page. Opens a 380 × 540 chat panel with six quick-action
+   topics. The system prompt restricts answers to Taazur product how-to
+   (sign-in, attendance, payroll, leave, performance, organogram, AI
+   assistant, support) and explicitly bans any disclosure of customer /
+   employee / salary data — safe to expose during a customer demo.
+
+   Verified live with Gemini 2.5 Flash on `https://hrms-app-chi.vercel.app`:
+   ```
+   POST /api/trpc/ai.chat.send?batch=1
+   → 200, source="llm", Gemini-2.5-flash, full Saudi-HR answer
+   ```
+
+4. **Leaflet punch-in location** (`apps/web/components/location-picker.tsx`,
+   wired into `apps/web/app/(dashboard)/attendance/me/page.tsx` and
+   `attendance/page.tsx`). Lazy-loaded Leaflet + OpenStreetMap tile
+   layer, no paid API key. "Use my current location" captures browser
+   geolocation; three site presets cover Riyadh HQ, Dhahran Ops, Jubail
+   Project. Punch in / punch out are gated on a picked location; the
+   captured lat/lng is written to the attendance record.
+
+5. **Organogram wiring.** `apps/web/app/(dashboard)/departments/organogram/page.tsx`
+   was already in the codebase; added a sidebar link for admin, HR
+   manager and employee roles. Seed now populates
+   `manager_employee_id` so the tree renders properly: Reem (HR
+   Director) at the top, then Fahad / Aisha / Khalid / Noura / Mariam /
+   Ahmed as direct reports, then the rest of the team under them.
+
+6. **Employee self-service rewritten.**
+   `apps/web/app/(dashboard)/profile/page.tsx` no longer uses the
+   hardcoded `@hrms-app/demo` fixture; it now queries the live tenant
+   DB (`auth.session`, `employee.getById`, `payroll.payslip.list`,
+   `attendance.today`, `attendance.myMonthlySummary`,
+   `attendance.myHistory`) and renders quick-action cards plus a 30-day
+   attendance calendar. The calendar shows each day's punch-in time
+   and status (present / late / on leave / absent / remote) colour-coded
+   with a legend.
+
+7. **Production deps added.** `apps/web/package.json` now declares
+   `leaflet@^1.9.4`, `react-leaflet@^5.0.0` and `@types/leaflet`.
+
+### Verification — 2026-07-17 (round 2)
+
+- `pnpm run typecheck` → 15/15 packages pass.
+- `pnpm --filter @hrms-app/web build` → success; routes for
+  `/attendance`, `/attendance/me`, `/departments/organogram`, `/profile`
+  are present.
+- Live at `https://hrms-app-chi.vercel.app`:
+  - `/api/health` → `{"status":"ok","db":"connected"}`
+  - `GET /login` → 200
+  - Employee sign-in → session contains populated `employeeId`.
+  - HR sign-in → AI chat returns real Gemini-2.5-flash answer.
+  - Organogram, Attendance, My attendance, Profile, Payroll,
+    Employees, Leave all return 200.
+
+### Outstanding (pre-existing, not introduced by this delivery)
+
+- The dashboard `/` route returns 500 in production. The dashboard
+  page relies on `api.leave.request.list` and `api.department.list`
+  which both work, so the 500 is most likely caused by a pre-existing
+  data-shape mismatch in another query. To be triaged separately so
+  this delivery stays surgical.
