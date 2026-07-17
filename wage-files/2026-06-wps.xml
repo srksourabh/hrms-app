@@ -4,7 +4,7 @@
 <!-- _note: Iqama, bankAccount, and processedResult fields require live data -->
 <wageFile format="mudad-wps-demo">
   <period>2026-06</period>
-  <generatedAt>2026-07-17T03:17:46.169Z</generatedAt>
+  <generatedAt>2026-07-17T05:41:17.138Z</generatedAt>
   <batchReference>MUD-202606-01</batchReference>
   <totalEmployees>12</totalEmployees>
   <totalWages>374000.00</totalWages>
@@ -20,7 +20,7 @@
     <overtime>0.00</overtime>
     <grossWage>42500.00</grossWage>
     <gosiEmployee>3600.00</gosiEmployee>
-    <gosiEmployer>4400.00</gosiEmployer>
+    <gosiEmployer>4800.00</gosiEmployer>
     <netPay>38900.00</netPay>
     <!-- ⚠️ processedResult block required in official WPS file — not yet implemented -->
   </employee>
@@ -34,7 +34,7 @@
     <overtime>0.00</overtime>
     <grossWage>37625.00</grossWage>
     <gosiEmployee>3206.25</gosiEmployee>
-    <gosiEmployer>3918.75</gosiEmployer>
+    <gosiEmployer>4275.00</gosiEmployer>
     <netPay>34418.75</netPay>
     <!-- ⚠️ processedResult block required in official WPS file — not yet implemented -->
   </employee>
@@ -48,7 +48,7 @@
     <overtime>0.00</overtime>
     <grossWage>29625.00</grossWage>
     <gosiEmployee>2531.25</gosiEmployee>
-    <gosiEmployer>3093.75</gosiEmployer>
+    <gosiEmployer>3375.00</gosiEmployer>
     <netPay>27093.75</netPay>
     <!-- ⚠️ processedResult block required in official WPS file — not yet implemented -->
   </employee>
@@ -62,7 +62,7 @@
     <overtime>0.00</overtime>
     <grossWage>18500.00</grossWage>
     <gosiEmployee>2012.50</gosiEmployee>
-    <gosiEmployer>2187.50</gosiEmployer>
+    <gosiEmployer>2362.50</gosiEmployer>
     <netPay>16487.50</netPay>
     <!-- ⚠️ processedResult block required in official WPS file — not yet implemented -->
   </employee>
@@ -90,7 +90,7 @@
     <overtime>0.00</overtime>
     <grossWage>26500.00</grossWage>
     <gosiEmployee>2250.00</gosiEmployee>
-    <gosiEmployer>2750.00</gosiEmployer>
+    <gosiEmployer>3000.00</gosiEmployer>
     <netPay>24250.00</netPay>
     <!-- ⚠️ processedResult block required in official WPS file — not yet implemented -->
   </employee>
@@ -104,7 +104,7 @@
     <overtime>0.00</overtime>
     <grossWage>41000.00</grossWage>
     <gosiEmployee>3487.50</gosiEmployee>
-    <gosiEmployer>4262.50</gosiEmployer>
+    <gosiEmployer>4650.00</gosiEmployer>
     <netPay>37512.50</netPay>
     <!-- ⚠️ processedResult block required in official WPS file — not yet implemented -->
   </employee>
@@ -118,7 +118,7 @@
     <overtime>0.00</overtime>
     <grossWage>23750.00</grossWage>
     <gosiEmployee>2025.00</gosiEmployee>
-    <gosiEmployer>2475.00</gosiEmployer>
+    <gosiEmployer>2700.00</gosiEmployer>
     <netPay>21725.00</netPay>
     <!-- ⚠️ processedResult block required in official WPS file — not yet implemented -->
   </employee>
@@ -132,7 +132,7 @@
     <overtime>0.00</overtime>
     <grossWage>29000.00</grossWage>
     <gosiEmployee>2475.00</gosiEmployee>
-    <gosiEmployer>3025.00</gosiEmployer>
+    <gosiEmployer>3300.00</gosiEmployer>
     <netPay>26525.00</netPay>
     <!-- ⚠️ processedResult block required in official WPS file — not yet implemented -->
   </employee>
@@ -146,7 +146,7 @@
     <overtime>0.00</overtime>
     <grossWage>32375.00</grossWage>
     <gosiEmployee>2756.25</gosiEmployee>
-    <gosiEmployer>3368.75</gosiEmployer>
+    <gosiEmployer>3675.00</gosiEmployer>
     <netPay>29618.75</netPay>
     <!-- ⚠️ processedResult block required in official WPS file — not yet implemented -->
   </employee>
@@ -174,7 +174,7 @@
     <overtime>0.00</overtime>
     <grossWage>33625.00</grossWage>
     <gosiEmployee>2868.75</gosiEmployee>
-    <gosiEmployer>3506.25</gosiEmployer>
+    <gosiEmployer>3825.00</gosiEmployer>
     <netPay>30756.25</netPay>
     <!-- ⚠️ processedResult block required in official WPS file — not yet implemented -->
   </employee>

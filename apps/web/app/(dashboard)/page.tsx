@@ -21,7 +21,10 @@ import {
 
 export default function DashboardPage() {
   const { data: session } = useSession();
-  const { data: employees } = api.employee.list.useQuery({ pageSize: 1000 });
+  // Dashboard metrics — fetch the full employee list to display an accurate count.
+  // Cap at 500 to bound payload size; a real production deployment would add
+  // a dedicated count() endpoint to the employee router.
+  const { data: employees } = api.employee.list.useQuery({ pageSize: 500 });
   const { data: departments } = api.department.list.useQuery();
   const { data: pendingLeaves } = api.leave.request.list.useQuery({ status: "pending" });
 

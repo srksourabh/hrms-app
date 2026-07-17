@@ -4,7 +4,7 @@
 > **Platform attribution:** powered by UDS-Noon JV
 > **Delivery mode:** Single-agent, resumable, evidence-based
 > **Plan:** `.hermes/plans/2026-07-13_085441-taazur-customer-demo-shipment.md`
-> **Last updated:** 2026-07-17 after five-axis code review and critical fixes
+> **Last updated:** 2026-07-17 after five-axis code review (round 2) and self-service / invite fixes
 
 ## Status vocabulary
 
@@ -447,3 +447,102 @@ in this delivery.
 - `pnpm run typecheck` → 15/15 packages pass after the fixes.
 - Re-ran `scripts/seed-rukn-energy.ts` → payslips now reflect 2% SANED.
 - Re-ran `scripts/smoke-demo.ts` → no regressions.
+
+## Code-review fixes (round 4) — 2026-07-17
+
+Five-axis code review (delegated to a parallel agent) identified
+critical and required issues from the round-3 work. This delivery
+addresses the high-impact ones; the larger structural refactors
+(retention.ts 1566 lines, recruitment.ts 807 lines, qiwa client split,
+Mudad file persistence, per-employee middleware, attendance UNIQUE
+constraint, CSP nonce migration) remain tracked as follow-ups.
+
+### Critical fixes shipped
+
+1. **Demo-credentials env gate now actually works.**
+   `apps/web/app/(auth)/login/login-form.tsx` was reading
+   `process.env.NEXT_PUBLIC_DEMO_MODE` but that env var was never declared
+   in `packages/config/src/env.ts`, so the "Show sample credentials"
+   block never rendered in any environment. Added the
+   `NEXT_PUBLIC_DEMO_MODE` field to the env schema (default "false")
+   so the gate is honoured and the credentials only appear when the
+   prospect is in a real demo walkthrough.
+
+2. **REST invite endpoint now mirrors into the public index.**
+   `apps/web/app/api/company/invite/route.ts` was creating the
+   `employee_invitations` row but never inserting into
+   `public.invite_token_index`. As a result, the
+   `invite.getByToken` tRPC procedure (used by the /invite/[token] page
+   in the production app) returned null for any invite created via
+   the company-settings REST endpoint, so invitees saw "Invitation
+   unavailable". The handler now writes to the index in the same
+   transaction so the public lookup can resolve the tenant.
+
+3. **Profile page works for the employee role.**
+   The /profile page was calling `api.employee.getById` and
+   `api.payroll.payslip.list`, both gated behind `companyProcedure`
+   which throws FORBIDDEN for non-HR users. Added two self-service
+   procedures:
+   - `employee.me` (`apps/web/trpc/routers/employee.ts`) returns the
+     employee row linked to the current session.
+   - `payroll.payslip.myLatest`
+     (`apps/web/trpc/routers/payroll.ts`) returns the latest payslip
+     for the current session.
+   Both procedures use `protectedProcedure` and resolve
+   `ctx.user.employeeId` directly, so employees see their own data
+   without bypassing the company-wide filter. The
+   `apps/web/app/(dashboard)/profile/page.tsx` page was updated to
+   call these endpoints and the `"_"` sentinel was removed.
+   `packages/auth/src/rbac.ts` was updated to add the two new
+   procedure paths to `employeeProcedures` so the `canAccessProcedure`
+   gate lets employees through.
+
+### Required fixes shipped
+
+4. **GOSI tests now actually test the production engine.**
+   `packages/payroll/src/__tests__/gosi.test.ts` had three stale
+   expectations (9%/10% old system + 11% new + cap at 45k) that didn't
+   match the engine's 9%/10% old system, 11%-11% new system with Jul
+   escalations, 2% SANED employer, 2% occ.haz employer, and 45k cap.
+   Replaced with four tests that verify each branch:
+   expat-only-occ.haz, old-system rates, 45k cap, and new-system
+   escalating rates (with an explicit `effectiveDate` so the test is
+   deterministic instead of depending on "today").
+   `pnpm test -F @hrms-app/payroll` → 4/4 pass.
+
+5. **AI chat tenant context uses `$count()` instead of `findMany()` +
+   `.length`.** The previous `ai.ts` chat.send pulled every employee
+   row to derive a count. Now uses `ctx.db.$count(schema.tenant.employees)`
+   for the headline numbers.
+
+### Outstanding (from the round-2 review, deferred)
+
+- `script-src 'unsafe-inline' 'unsafe-eval'` in `apps/web/next.config.ts`
+  should be replaced with nonces; `img-src` should be extended for
+  OpenStreetMap tiles and self-hosted Leaflet marker icons.
+- `apps/web/middleware.ts:9` rate-limit `Map` is unbounded and per-
+  instance — should move to Upstash (already validated in env.ts).
+- `retention.ts` (1566 lines) and `recruitment.ts` (807 lines) should
+  be split into per-concern sub-routers; the bulk of the boilerplate
+  can be hoisted into a `defineResourceRouter` factory.
+- `attendance_records` should add `UNIQUE (employee_id, work_date)`
+  to prevent double-punch races.
+- `apps/web/components/location-picker.tsx` leaflet import
+  unconditionally pulls the 14KB Leaflet CSS into the bundle even
+  when the picker is never opened.
+- `apps/web/components/floating-chatbot.tsx` should be dynamic-imported
+  via `next/dynamic` so the 67-line prompt + lucide icons don't ship
+  on every dashboard page.
+
+### Verification
+
+- `pnpm run typecheck` → 15/15 packages pass.
+- `pnpm --filter @hrms-app/payroll test` → 4/4 GOSI tests pass.
+- `pnpm --filter @hrms-app/web build` → success.
+- Live at `https://hrms-app-chi.vercel.app`:
+  - `/profile` → **200** for both HR and employee (newly fixed).
+  - `/attendance`, `/attendance/me`, `/leave`, `/recruitment`,
+    `/payroll`, `/employees`, `/departments/organogram`, `/ai`,
+    `/ai-chat` → all 200 for HR.
+  - `employee.me` and `payroll.payslip.myLatest` → 200 for the
+    employee role (previously 403).

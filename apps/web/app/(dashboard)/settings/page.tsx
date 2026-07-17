@@ -382,8 +382,10 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4 px-0">
           <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-stone-50 px-4 py-3">
-            <p className="text-sm font-medium text-slate-900">Tenant ID</p>
-            <code className="text-sm font-mono text-slate-600">{user?.tenantId}</code>
+            <p className="text-sm font-medium text-slate-900">Tenant Reference</p>
+            <code className="text-sm font-mono text-slate-600">
+              {user?.tenantId ? `${user.tenantId.slice(0, 8)}••••${user.tenantId.slice(-4)}` : "—"}
+            </code>
           </div>
           <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-stone-50 px-4 py-3">
             <p className="text-sm font-medium text-slate-900">Role</p>

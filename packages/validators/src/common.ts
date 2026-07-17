@@ -6,7 +6,10 @@ export const emailSchema = z.string().email("Invalid email address");
 
 export const paginationSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
-  pageSize: z.coerce.number().int().positive().max(100).default(20),
+  // Cap is intentionally high; pages that need full result sets (dashboard,
+  // organogram, file-upload employee picker) call with up to 500 and rely on
+  // their own tRPC procedures for tenant-scoped pagination when needed.
+  pageSize: z.coerce.number().int().positive().max(500).default(20),
 });
 
 export type PaginationInput = z.infer<typeof paginationSchema>;

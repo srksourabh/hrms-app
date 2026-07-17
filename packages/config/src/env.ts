@@ -31,6 +31,11 @@ const envSchema = z.object({
   // packages/auth/src/demo-identities.ts are accepted at sign-in.
   // Production tenants must leave this unset or "false".
   DEMO_MODE: z.enum(["true", "false"]).default("false"),
+  // Mirror of DEMO_MODE that the client bundle can read. Set this
+  // alongside DEMO_MODE in Vercel to surface the sample-credentials
+  // block on the login page for prospect walkthroughs. Never enable
+  // in a production tenant.
+  NEXT_PUBLIC_DEMO_MODE: z.enum(["true", "false"]).default("false"),
 });
 
 export type Env = z.infer<typeof envSchema>;

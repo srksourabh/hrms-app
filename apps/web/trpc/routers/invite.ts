@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { hash } from "bcryptjs";
-import { createTRPCRouter, publicProcedure, requireRole } from "../server";
+import { createTRPCRouter, publicProcedure, protectedProcedure, requireRole } from "../server";
 import { eq, and, desc } from "drizzle-orm";
 import { adminDb, users, inviteTokenIndex } from "@hrms-app/db";
 import { employees, employeeInvitations } from "@hrms-app/db/schema/tenant";

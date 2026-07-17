@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, companyProcedure, requireRole } from "../server";
+import { createTRPCRouter, companyProcedure, protectedProcedure, requireRole } from "../server";
 import { schema } from "@hrms-app/db";
 import { TRPCError } from "@trpc/server";
 import {
@@ -159,6 +159,21 @@ export const payrollRouter = createTRPCRouter({
           orderBy: desc(schema.tenant.payslips.createdAt),
         });
       }),
+
+    /**
+     * Self-service: returns the latest payslip for the current user. The
+     * employee-role `list` procedure is gated behind companyProcedure, so
+     * the /profile page needs this alternative for non-HR users.
+     */
+    myLatest: protectedProcedure.query(async ({ ctx }) => {
+      const employeeId = ctx.user.employeeId;
+      if (!employeeId) return null;
+      return await ctx.db.query.payslips.findFirst({
+        where: eq(schema.tenant.payslips.employeeId, employeeId),
+        orderBy: desc(schema.tenant.payslips.createdAt),
+        with: { payrollRun: true, employee: true },
+      });
+    }),
 
     getById: companyProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
       return await ctx.db.query.payslips.findFirst({

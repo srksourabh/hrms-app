@@ -37,6 +37,20 @@ export const employeeRouter = createTRPCRouter({
     });
   }),
 
+  /**
+   * Self-service: returns the employee row that the current user is linked to.
+   * Available to every authenticated role so the /profile page works for
+   * employees, managers, HR and super admins.
+   */
+  me: protectedProcedure.query(async ({ ctx }) => {
+    const employeeId = ctx.user.employeeId;
+    if (!employeeId) return null;
+    return await ctx.db.query.employees.findFirst({
+      where: eq(schema.tenant.employees.id, employeeId),
+      with: { department: true, manager: true },
+    });
+  }),
+
   // Employees can submit a self-onboarding record (org-wide); HR and
   // super_admin can create records directly. Either way, the record lands
   // in the same table — RBAC + ownership scopes decide what the rest of the

@@ -5,7 +5,10 @@ const startTime = Date.now();
 
 export async function GET() {
   let dbStatus = "disconnected";
-  const redisStatus = "disconnected";
+  // Redis is optional in this deployment — only used for background queues
+  // (accrual, expiry alerts). If not configured, status is "not_configured"
+  // rather than "disconnected" so we don't imply a regression.
+  const redisStatus = process.env.REDIS_URL ? "configured" : "not_configured";
 
   try {
     const { adminDb } = await import("@hrms-app/db");

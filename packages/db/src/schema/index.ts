@@ -34,6 +34,7 @@ export { users, userRoleEnum } from "./public/users";
 export { accounts } from "./public/accounts";
 export { sessions } from "./public/sessions";
 export { verificationTokens } from "./public/verification_tokens";
+export { inviteTokenIndex } from "./public/invite_token_index";
 export { departments } from "./tenant/departments";
 export { employees, employmentStatusEnum, gosiSystemEnum, nationalityEnum } from "./tenant/employees";
 export { employmentHistory } from "./tenant/employment_history";

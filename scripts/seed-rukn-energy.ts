@@ -406,11 +406,28 @@ async function main() {
     CREATE TABLE IF NOT EXISTS ${S("leave_types")} (
       id uuid PRIMARY KEY,
       name text NOT NULL,
-      default_days integer NOT NULL DEFAULT 0,
+      days_allowed integer NOT NULL DEFAULT 0,
       paid boolean NOT NULL DEFAULT true,
-      created_at timestamp NOT NULL DEFAULT now()
+      rules jsonb,
+      created_at timestamp NOT NULL DEFAULT now(),
+      updated_at timestamp NOT NULL DEFAULT now()
     )
   `);
+  // Migrate older installs that created the column under the wrong name.
+  await sql.unsafe(`
+    DO $$ BEGIN
+      IF EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_schema = '${TENANT}' AND table_name = 'leave_types'
+                   AND column_name = 'default_days')
+         AND NOT EXISTS (SELECT 1 FROM information_schema.columns
+                         WHERE table_schema = '${TENANT}' AND table_name = 'leave_types'
+                           AND column_name = 'days_allowed') THEN
+        ALTER TABLE ${S("leave_types")} RENAME COLUMN "default_days" TO "days_allowed";
+      END IF;
+    END $$;
+  `).catch(() => undefined);
+  await sql.unsafe(`ALTER TABLE ${S("leave_types")} ADD COLUMN IF NOT EXISTS rules jsonb`).catch(() => undefined);
+  await sql.unsafe(`ALTER TABLE ${S("leave_types")} ADD COLUMN IF NOT EXISTS updated_at timestamp DEFAULT now()`).catch(() => undefined);
   await sql.unsafe(`
     CREATE TABLE IF NOT EXISTS ${S("leave_requests")} (
       id uuid PRIMARY KEY,
@@ -774,10 +791,10 @@ async function main() {
   const sickTypeId = id("leave-type-sick");
   const personalTypeId = id("leave-type-personal");
   const examTypeId = id("leave-type-exam");
-  await sql.unsafe(`INSERT INTO ${S("leave_types")} (id, name, default_days, paid) VALUES ($1, 'Annual leave', 21, true) ON CONFLICT DO NOTHING`, [annualTypeId]);
-  await sql.unsafe(`INSERT INTO ${S("leave_types")} (id, name, default_days, paid) VALUES ($1, 'Sick leave', 30, true) ON CONFLICT DO NOTHING`, [sickTypeId]);
-  await sql.unsafe(`INSERT INTO ${S("leave_types")} (id, name, default_days, paid) VALUES ($1, 'Personal leave', 5, false) ON CONFLICT DO NOTHING`, [personalTypeId]);
-  await sql.unsafe(`INSERT INTO ${S("leave_types")} (id, name, default_days, paid) VALUES ($1, 'Examination leave', 10, true) ON CONFLICT DO NOTHING`, [examTypeId]);
+  await sql.unsafe(`INSERT INTO ${S("leave_types")} (id, name, days_allowed, paid) VALUES ($1, 'Annual leave', 21, true) ON CONFLICT DO NOTHING`, [annualTypeId]);
+  await sql.unsafe(`INSERT INTO ${S("leave_types")} (id, name, days_allowed, paid) VALUES ($1, 'Sick leave', 30, true) ON CONFLICT DO NOTHING`, [sickTypeId]);
+  await sql.unsafe(`INSERT INTO ${S("leave_types")} (id, name, days_allowed, paid) VALUES ($1, 'Personal leave', 5, false) ON CONFLICT DO NOTHING`, [personalTypeId]);
+  await sql.unsafe(`INSERT INTO ${S("leave_types")} (id, name, days_allowed, paid) VALUES ($1, 'Examination leave', 10, true) ON CONFLICT DO NOTHING`, [examTypeId]);
 
   const leaveRequests = [
     { emp: "emp-priya",  type: annualTypeId,   from: "2026-07-13", to: "2026-07-14", status: "approved" },

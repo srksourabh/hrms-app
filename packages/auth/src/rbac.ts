@@ -191,6 +191,8 @@ const employeeProcedures = new Set([
   "attendance.today",
   "attendance.myHistory",
   "attendance.myMonthlySummary",
+  "employee.me",
+  "payroll.payslip.myLatest",
 ]);
 
 const candidateProcedures = new Set([

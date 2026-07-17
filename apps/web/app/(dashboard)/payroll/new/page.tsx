@@ -44,13 +44,13 @@ export default function NewPayrollRunPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Period Month (YYYY-MM)</label>
+              <label className="text-sm font-medium">Period Month</label>
               <Input
-                placeholder="e.g. 2026-07"
+                type="month"
                 value={periodMonth}
                 onChange={(e) => setPeriodMonth(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">Enter the payroll period in YYYY-MM format</p>
+              <p className="text-xs text-muted-foreground">Select the payroll period</p>
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
             <div className="flex gap-2 pt-2">

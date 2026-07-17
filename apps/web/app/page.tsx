@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@hrms-app/auth";
 import { can, type AppRole, type Capability } from "@hrms-app/auth/rbac";
-import { taazurEnergyDemo } from "@hrms-app/demo";
 import { adminDb, getTenantDb, tenants } from "@hrms-app/db";
 import { eq, sql } from "drizzle-orm";
 import { formatDual, todayHijri } from "@hrms-app/date";
@@ -61,6 +60,11 @@ export default async function RootPage() {
       });
 
       if (tenant) {
+        // Gate: new companies must complete onboarding before seeing the dashboard
+        if (tenant.onboardingCompleted !== "true") {
+          redirect("/settings/company");
+        }
+
         const tenantDb = getTenantDb(tenant.schemaName);
         const [empCount] = await tenantDb.execute(sql`SELECT COUNT(*)::int as count FROM ${sql.identifier(tenant.schemaName)}."employees" WHERE "employment_status" = 'active'`);
         const [deptCount] = await tenantDb.execute(sql`SELECT COUNT(*)::int as count FROM ${sql.identifier(tenant.schemaName)}."departments"`);
@@ -108,11 +112,11 @@ function CommandCenter({ userName, role, dbCounts }: { userName: string; role: A
     (module) => featuredSlugs.includes(module.slug) && can(role, featuredCapability[module.slug] ?? "dashboard:view_admin"),
   );
 
-  const activeCount = dbCounts ? dbCounts.activeCount : taazurEnergyDemo.employees.filter((employee) => employee.status === "active").length;
-  const totalHeadcount = dbCounts ? dbCounts.totalHeadcount : taazurEnergyDemo.employees.length;
-  const departmentCount = dbCounts ? dbCounts.departmentCount : taazurEnergyDemo.departments.length;
-  const openJobsCount = dbCounts ? dbCounts.openJobsCount : taazurEnergyDemo.recruitment.requisitions.length;
-  const payslipsCount = dbCounts ? dbCounts.payslipCount : taazurEnergyDemo.payroll.payslips.length;
+  const activeCount = dbCounts ? dbCounts.activeCount : 0;
+  const totalHeadcount = dbCounts ? dbCounts.totalHeadcount : 0;
+  const departmentCount = dbCounts ? dbCounts.departmentCount : 0;
+  const openJobsCount = dbCounts ? dbCounts.openJobsCount : 0;
+  const payslipsCount = dbCounts ? dbCounts.payslipCount : 0;
 
   // Hijri-focal date: today in both Umm al-Qura and Gregorian. Saudi HR
   // decisions are pegged to the Hijri calendar (GOSI cut-offs, Iqama
@@ -125,10 +129,10 @@ function CommandCenter({ userName, role, dbCounts }: { userName: string; role: A
   const gregOnlyEn = today.toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
 
   const metrics = [
-    { label: "Active people", value: String(activeCount), delta: `${departmentCount} departments · ${taazurEnergyDemo.branches.length} branches`, icon: Users, tone: "emerald", capability: "people:view_company" as Capability },
-    { label: "Payroll run", value: `SAR ${(taazurEnergyDemo.payroll.net / 1000).toFixed(0)}k`, delta: `${payslipsCount} payslips · ${taazurEnergyDemo.payroll.anomalies.length} to review`, icon: BriefcaseBusiness, tone: "amber", capability: "payroll:view_company" as Capability },
-    { label: "Open positions", value: String(openJobsCount), delta: `${taazurEnergyDemo.recruitment.candidates.length} candidates · ${taazurEnergyDemo.projects.length} projects`, icon: UserPlus, tone: "blue", capability: "recruitment:view" as Capability },
-    { label: "Saudization", value: `${taazurEnergyDemo.company.saudizationRate}%`, delta: `${taazurEnergyDemo.company.nitaqatBand} band · this month`, icon: ShieldCheck, tone: "violet", capability: "compliance:manage" as Capability },
+    { label: "Active people", value: String(activeCount), delta: `${departmentCount} departments · ${dbCounts ? "Live data" : "—"}`, icon: Users, tone: "emerald", capability: "people:view_company" as Capability },
+    { label: "Payroll run", value: activeCount > 0 ? `SAR ${(Number(dbCounts?.payslipCount ?? 0) * 4500 / 1000).toFixed(0)}k` : "—", delta: `${payslipsCount} payslips`, icon: BriefcaseBusiness, tone: "amber", capability: "payroll:view_company" as Capability },
+    { label: "Open positions", value: String(openJobsCount), delta: `Live data`, icon: UserPlus, tone: "blue", capability: "recruitment:view" as Capability },
+    { label: "Saudization", value: "—", delta: "Configure in Compliance", icon: ShieldCheck, tone: "violet", capability: "compliance:manage" as Capability },
   ].filter((metric) => can(role, metric.capability));
 
   const toneStyles: Record<string, string> = {
@@ -149,7 +153,7 @@ function CommandCenter({ userName, role, dbCounts }: { userName: string; role: A
           </span>
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-800">
-              {taazurEnergyDemo.company.name} · Hijri Calendar
+              Your Workspace · Hijri Calendar
             </p>
             <p className="mt-0.5 text-sm font-bold text-slate-900" dir="rtl">
               {dualDateAr}
@@ -170,13 +174,12 @@ function CommandCenter({ userName, role, dbCounts }: { userName: string; role: A
       <section className="relative overflow-hidden rounded-[24px] border border-slate-200 bg-white px-6 py-7 sm:px-8">
         <div className="grid gap-6 xl:grid-cols-[1.35fr_.65fr] xl:items-end">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{taazurEnergyDemo.company.name}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Your Workspace</p>
             <h1 className="mt-2 max-w-3xl text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">
               Good morning, {userName.split(" ")[0]}.
             </h1>
             <p className="mt-2 text-sm leading-7 text-slate-600 max-w-2xl">
-              {totalHeadcount} active people across {taazurEnergyDemo.branches.length} branches and {departmentCount} departments.
-              {dbCounts ? "Live data from Supabase." : ""} Today is {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}.
+              {totalHeadcount} employee{totalHeadcount !== 1 ? "s" : ""} across {departmentCount} department{departmentCount !== 1 ? "s" : ""}. Today is {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}.
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <Link href="/employees/new" className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-900">
@@ -213,7 +216,7 @@ function CommandCenter({ userName, role, dbCounts }: { userName: string; role: A
               </div>
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-emerald-100"><div className="h-full w-[94%] rounded-full bg-emerald-600" /></div>
               <div className="mt-2 flex justify-between text-xs">
-                <span className="text-slate-600">{taazurEnergyDemo.payroll.payslips.length} payslips validated</span>
+                <span className="text-slate-600">{payslipsCount} payslips validated</span>
                 <strong className="text-emerald-800">94% ready</strong>
               </div>
             </div>
@@ -266,10 +269,8 @@ function CommandCenter({ userName, role, dbCounts }: { userName: string; role: A
           <div className="flex items-center justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-800">Today</p><h2 className="mt-1 text-2xl font-semibold tracking-[-0.035em] text-slate-950">Priority queue</h2></div><CircleAlert className="h-5 w-5 text-amber-600" /></div>
           <div className="mt-6 space-y-3">
             {[
-              { title: "2 documents expire this month", meta: "HSE certificate and Iqama", icon: FileCheck2, href: "/documents", capability: "documents:view_company" as Capability },
-              { title: "Payroll pre-check required", meta: `June 2026 · ${taazurEnergyDemo.payroll.payslips.length} payslips`, icon: BriefcaseBusiness, href: "/payroll", capability: "payroll:view_company" as Capability },
-              { title: "1 leave approval pending", meta: "Omar Al-Dossary · Personal leave", icon: CalendarClock, href: "/leave", capability: "leave:approve" as Capability },
-              { title: "Saudization band review", meta: `${taazurEnergyDemo.company.saudizationRate}% · ${taazurEnergyDemo.company.nitaqatBand}`, icon: Landmark, href: "/compliance", capability: "compliance:manage" as Capability },
+              { title: "No pending documents to review", meta: "All documents are current", icon: FileCheck2, href: "/documents", capability: "documents:view_company" as Capability },
+              { title: "Run your first payroll", meta: "Configure payroll to get started", icon: BriefcaseBusiness, href: "/payroll", capability: "payroll:view_company" as Capability },
             ].filter((item) => can(role, item.capability)).map((item) => {
               const Icon = item.icon;
               return (

@@ -6,6 +6,10 @@ import { useState } from "react";
 import { productBrand } from "@hrms-app/config/brand";
 import { BrandMark } from "~/components/brand/brand-lockup";
 
+// Show the sample-credentials block when NEXT_PUBLIC_DEMO_MODE is "true".
+// Set this env var in Vercel whenever you want prospects to see the
+// four sample accounts and the shared password. Never enable in a
+// real production tenant.
 const DEMO_MODE_ENABLED = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
 const SAMPLE_USERS = DEMO_MODE_ENABLED

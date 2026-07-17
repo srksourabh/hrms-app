@@ -16,7 +16,26 @@ function getBaseUrl() {
 }
 
 export function TRPCReactProvider(props: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
+  // QueryClient with sensible defaults for an internal HR tool:
+  //  - 60s stale time so navigating between pages doesn't refetch unchanged data
+  //  - 5min gcTime so back-button navigation is instant from cache
+  //  - No refetchOnWindowFocus (annoying in demos)
+  //  - Keep refetchOnMount: true (the default) so creating a new employee
+  //    and navigating back to the list shows them without a manual reload.
+  //    Pages that need even fresher data should opt in via their own useQuery.
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 60_000,
+            gcTime: 5 * 60_000,
+            refetchOnWindowFocus: false,
+            retry: 1,
+          },
+        },
+      }),
+  );
 
   const [trpcClient] = useState(() =>
     api.createClient({

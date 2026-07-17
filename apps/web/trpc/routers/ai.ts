@@ -131,17 +131,19 @@ export const aiRouter = createTRPCRouter({
         const preferredLanguage = (ctx.session!.user.preferredLanguage ?? "en") as "en" | "ar";
 
         // Live tenant context. Wrap in try/catch so a misconfigured DB never
-        // blocks the assistant from responding.
+        // blocks the assistant from responding. Use $count() instead of
+        // pulling every row — the chat panel only needs the headline number.
         let contextLine = "Tenant: demo data (no live counts available).";
         try {
-          const schemaName = ctx.tenantDb ? null : null;
-          void schemaName;
-          // Re-use the simple Drizzle queries — they always work.
           const [empCount, activeCount, deptCount, openJobsCount] = await Promise.all([
-            ctx.db.query.employees.findMany().then((r: any[]) => r.length).catch(() => 0),
-            ctx.db.query.employees.findMany().then((r: any[]) => r.filter((e) => e.employmentStatus === "active").length).catch(() => 0),
-            ctx.db.query.departments.findMany().then((r: any[]) => r.length).catch(() => 0),
-            ctx.db.query.jobRequisitions.findMany().then((r: any[]) => r.filter((j) => j.status === "open").length).catch(() => 0),
+            ctx.db.$count(schema.tenant.employees).catch(() => 0),
+            ctx.db
+              .$count(schema.tenant.employees, eq(schema.tenant.employees.employmentStatus, "active"))
+              .catch(() => 0),
+            ctx.db.$count(schema.tenant.departments).catch(() => 0),
+            ctx.db
+              .$count(schema.tenant.jobRequisitions, eq(schema.tenant.jobRequisitions.status, "open"))
+              .catch(() => 0),
           ]);
           contextLine = `Tenant: ${activeCount} active employees (${empCount} total), ${deptCount} departments, ${openJobsCount} open positions.`;
         } catch {

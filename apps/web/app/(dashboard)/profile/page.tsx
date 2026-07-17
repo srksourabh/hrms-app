@@ -27,19 +27,14 @@ export default function ProfilePage() {
 
   const email = session.data?.user?.email ?? "";
   const name = session.data?.user?.name ?? "";
-  const employeeId = session.data?.user?.employeeId ?? null;
 
-  // Live employee profile from the tenant DB.
-  const employee = api.employee.getById.useQuery(
-    employeeId ?? ("_" as any),
-    { enabled: !!employeeId },
-  );
+  // Self-service: resolve the current user's own employee row without
+  // bumping into the companyProcedure gate on employee.getById.
+  const employee = api.employee.me.useQuery();
+  const employeeId = employee.data?.id ?? null;
 
-  // Live payslip for the latest month.
-  const latestPayslip = api.payroll.payslip.list.useQuery(
-    { employeeId: employeeId ?? undefined },
-    { enabled: !!employeeId },
-  );
+  // Self-service latest payslip (server-side, single row).
+  const latestPayslip = api.payroll.payslip.myLatest.useQuery();
 
   const payslip = useMemo(() => {
     const list = (latestPayslip.data ?? []) as any[];
