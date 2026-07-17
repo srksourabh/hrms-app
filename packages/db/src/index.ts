@@ -6,6 +6,7 @@ export { users, userRoleEnum, preferredLanguageEnum } from "./schema/public/user
 export { accounts } from "./schema/public/accounts";
 export { sessions } from "./schema/public/sessions";
 export { verificationTokens } from "./schema/public/verification_tokens";
+export { inviteTokenIndex } from "./schema/public/invite_token_index";
 export { departments } from "./schema/tenant/departments";
 export { employees, employmentStatusEnum, gosiSystemEnum, nationalityEnum } from "./schema/tenant/employees";
 export { employmentHistory } from "./schema/tenant/employment_history";
@@ -15,6 +16,7 @@ export { leaveTypes } from "./schema/tenant/leave_types";
 export { leaveRequests } from "./schema/tenant/leave_requests";
 export { leaveBalances } from "./schema/tenant/leave_balances";
 export { expenses, expenseStatusEnum, expenseCategoryEnum } from "./schema/tenant/expenses";
+export { employeeInvitations, inviteStatusEnum, inviteRoleEnum } from "./schema/tenant/employee-invitations";
 export { payrollRuns } from "./schema/tenant/payroll_runs";
 export { payslips } from "./schema/tenant/payslips";
 export { wageFiles } from "./schema/tenant/wage_files";

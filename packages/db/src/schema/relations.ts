@@ -19,6 +19,7 @@ import { leaveBalances } from "./tenant/leave_balances";
 import { payrollRuns } from "./tenant/payroll_runs";
 import { payslips } from "./tenant/payslips";
 import { wageFiles } from "./tenant/wage_files";
+import { employeeInvitations } from "./tenant/employee-invitations";
 import { complianceChecks } from "./tenant/compliance_checks";
 import { finalSettlements } from "./tenant/final_settlements";
 import { notifications } from "./tenant/notifications";
@@ -347,6 +348,17 @@ export const referenceChecksRelations = relations(referenceChecks, ({ one }) => 
   conductedBy: one(employees, {
     fields: [referenceChecks.conductedById],
     references: [employees.id],
+  }),
+}));
+
+export const employeeInvitationsRelations = relations(employeeInvitations, ({ one }) => ({
+  invitedBy: one(users, {
+    fields: [employeeInvitations.invitedByUserId],
+    references: [users.id],
+  }),
+  department: one(departments, {
+    fields: [employeeInvitations.departmentId],
+    references: [departments.id],
   }),
 }));
 

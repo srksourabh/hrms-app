@@ -29,7 +29,7 @@ import type { EmployeeContext, GosiResult } from "./types";
 const GOSI_MONTHLY_CAP = 45_000;
 
 /** SANED — Saudi National Unemployment Insurance (separate branch from GOSI pension) */
-const SANED_EMPLOYER_RATE = 0.01; // 1% of pension-contributory base, employer only
+const SANED_EMPLOYER_RATE = 0.02; // 2% of pension-contributory base, employer only
 
 /**
  * Occupational Hazards Insurance — covers ALL workers including expatriates.

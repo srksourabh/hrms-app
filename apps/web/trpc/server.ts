@@ -2,7 +2,7 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 import { auth } from "@hrms-app/auth";
-import { canAccessProcedure } from "@hrms-app/auth/rbac";
+import { canAccessProcedure, isAppRole } from "@hrms-app/auth/rbac";
 import { adminDb, getTenantDb, tenants } from "@hrms-app/db";
 
 export async function createTRPCContext(opts: { headers: Headers }) {
@@ -74,7 +74,10 @@ export function requireRole(...roles: string[]) {
   return t.procedure.use(({ ctx, next }) => {
     if (!ctx.session?.user) throw new TRPCError({ code: "UNAUTHORIZED" });
     if (!ctx.tenantDb) throw new TRPCError({ code: "UNAUTHORIZED", message: "No tenant context" });
-    if (!roles.includes(ctx.session.user.role ?? "")) throw new TRPCError({ code: "FORBIDDEN" });
+    const userRole = ctx.session.user.role;
+    // Fail-closed: reject any role that isn't in the canonical enum.
+    if (!isAppRole(userRole)) throw new TRPCError({ code: "FORBIDDEN", message: "Invalid role" });
+    if (!roles.includes(userRole)) throw new TRPCError({ code: "FORBIDDEN" });
     return next({
       ctx: { ...ctx, user: ctx.session.user, db: ctx.tenantDb as any },
     });

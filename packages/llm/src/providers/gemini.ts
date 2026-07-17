@@ -58,13 +58,18 @@ export function createGeminiClient(config: GeminiClientConfig): LlmClient {
           parts: [{ text: m.content }],
         }));
 
-      const url = `${GEMINI_API_BASE}/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(config.apiKey)}`;
+      const url = `${GEMINI_API_BASE}/${encodeURIComponent(model)}:generateContent`;
 
       let response: Response;
       try {
         response = await fetch(url, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          // Pass the API key as a header rather than as a query string so
+          // it never lands in CDN / proxy access logs.
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": config.apiKey,
+          },
           body: JSON.stringify({
             contents,
             systemInstruction,

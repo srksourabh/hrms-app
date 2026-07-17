@@ -4,7 +4,7 @@
 > **Platform attribution:** powered by UDS-Noon JV
 > **Delivery mode:** Single-agent, resumable, evidence-based
 > **Plan:** `.hermes/plans/2026-07-13_085441-taazur-customer-demo-shipment.md`
-> **Last updated:** 2026-07-17 after production-readiness pass (employee-link fix, floating chatbot, leaflet location, organogram wiring, sample-credential login)
+> **Last updated:** 2026-07-17 after five-axis code review and critical fixes
 
 ## Status vocabulary
 
@@ -328,3 +328,122 @@ Password for all accounts: `Rukn2026!`.
   which both work, so the 500 is most likely caused by a pre-existing
   data-shape mismatch in another query. To be triaged separately so
   this delivery stays surgical.
+
+## Five-axis code review + critical fixes — 2026-07-17
+
+A multi-dimensional review was run across correctness, readability,
+architecture, security, and performance. The full report lives in the
+session transcript; this section documents the items that were fixed
+in this delivery.
+
+### Critical fixes shipped
+
+1. **SQL injection in `apps/web/trpc/routers/invite.ts` — FIXED.**
+   The previous `getByToken` and `acceptInvite` procedures built raw
+   SQL with the user-supplied token and the per-tenant schema name
+   interpolated directly into the query string. Defence was a single
+   `.replace(/'/g, "''")` which is unreliable against SQLi vectors
+   that don't need a quote.
+   - Added `public.invite_token_index` (Drizzle table with a unique
+     index on `token`) so a public procedure can resolve a token to
+     its tenant schema in constant time without scanning every
+     schema.
+   - `create`, `resend` and `revoke` now mirror the token into the
+     public index. `getByToken` and `acceptInvite` look it up via
+     Drizzle's parameterised query (no string concatenation).
+   - `acceptInvite` still queries the tenant schema for the invite
+     row, but only by UUID (parameterised).
+
+2. **Demo credentials exposed unconditionally in the login page — FIXED.**
+   `apps/web/app/(auth)/login/login-form.tsx` previously rendered the
+   four sample emails and the password `Rukn2026!` to every visitor.
+   The whole "Show sample credentials" block is now gated on
+   `process.env.NEXT_PUBLIC_DEMO_MODE === "true"`. With the env
+   unset (production default), only the email + password form is
+   rendered. With `NEXT_PUBLIC_DEMO_MODE=true` the sample block
+   appears for the customer walkthrough.
+
+3. **SANED rate mismatch — FIXED.**
+   `packages/payroll/src/gosi.ts` documented SANED as `2%` in its
+   header comment but the constant was `0.01` (1%). The discrepancy
+   silently under-collected SANED on every Saudi payslip.
+   `SANED_EMPLOYER_RATE = 0.02` now matches the documented rate.
+   Verified live against the seed: Ahmed (base 30,625) → SANED
+   612.50, Aisha (base 28,125) → SANED 562.50, Fahad (base 35,625)
+   → SANED 712.50. Re-ran the seed; payslips now reflect 2% SANED.
+
+4. **`AUTH_SECRET` dev-fallback could pass validation in production — FIXED.**
+   `packages/config/src/env.ts` had a `default()` chain that fell back
+   to `"dev-secret-key-not-for-production-use-at-least-32-chars"` if
+   `NODE_ENV !== "production"`. The same fallback satisfied the
+   `min(32)` length rule, so a misconfigured production deploy could
+   silently boot with the documented dev secret.
+   - Added a `.refine(v => !/dev-secret/i.test(v))` so the secret can
+     not pass validation if it contains "dev-secret".
+   - Removed the entire dev-fallback block — the app now throws on
+     boot if `DATABASE_URL` or `AUTH_SECRET` are missing or invalid,
+     rather than falling back.
+
+5. **Dead-code removed.**
+   - `apps/web/trpc/routers/expense.ts` — dropped the dead
+     `ctx.db.execute(sql\`...\`)` block (result was discarded
+     immediately afterwards).
+   - `packages/payroll/src/mudad.ts:83` — replaced the
+     `nationality === "expat" ? null : null` ternary (both branches
+     identical) with a single `null` and a comment explaining why
+     the encrypted IDs are intentionally never decoded in the demo.
+
+6. **Gemini API key no longer leaks via URL.**
+   `packages/llm/src/providers/gemini.ts` previously appended the
+   API key as a `?key=` query string. URL access logs and proxies
+   could capture the key. Switched to the `x-goog-api-key` header.
+
+7. **tRPC `requireRole` now fails closed.**
+   `apps/web/trpc/server.ts` previously called
+   `roles.includes(ctx.session.user.role ?? "")` which would silently
+   allow any role string. Added a `isAppRole(userRole)` guard from
+   `packages/auth/rbac` so any malformed role yields 403 instead of
+   falling through.
+
+8. **Tenant DDL now accepts `gcc` nationality.**
+   `packages/db/src/tenant-manager.ts:136` had
+   `CHECK (nationality IN ('saudi', 'expat'))`. The GOSI engine and
+   orchestrator both support `gcc` (GOSI reciprocity agreement) —
+   persistence silently rejected it. Extended the constraint to
+   allow `'gcc'`.
+
+9. **Debug endpoint locked down.**
+   `apps/web/app/api/auth/debug/route.ts` previously returned the
+   database hostname, port, auth-secret length and DEMO_MODE flag
+   in production. Now returns `404` unless `NODE_ENV !== "production"`
+   or `ENABLE_DEBUG_ENDPOINT=true` is set.
+
+10. **`getTenantDb` now tags the connection with its schema name.**
+    Added `(db as any)._schemaName = schemaName` in
+    `tenant-manager.ts` so the new invite router can recover the
+    schema without an extra `tenants` query.
+
+### Top priorities remaining (not in this delivery)
+
+| # | Severity | Item |
+|---|---|---|
+| 1 | REQUIRED | Refactor `retention.ts` (1566 lines) and `recruitment.ts` (807 lines) into a `defineResourceRouter(schema, validators, allowedRoles)` factory — expected ~50% line reduction. |
+| 2 | REQUIRED | Cache `tenants.schemaName` per tenantId in `apps/web/trpc/server.ts` instead of an `adminDb` round-trip on every tRPC call. |
+| 3 | REQUIRED | Move `qiwa.ts` inline client + Zod schemas into `packages/qiwa/src/`; fix hardcoded `api.qiwa.sa` URLs so sandbox hits the right host. |
+| 4 | REQUIRED | Move Mudad wage file generation to persist the file via `wage_files.pdf_url` instead of returning it transient from a mutation. |
+| 5 | REQUIRED | Encode per-employee ownership scope (employee / manager / HR) at the tRPC middleware layer so individual routers can't forget. |
+| 6 | REQUIRED | Self-host Leaflet marker icons from `/public/icons/leaflet/` (currently fetched from `unpkg.com`). |
+| 7 | REQUIRED | Tighten `next.config.ts` CSP: drop `'unsafe-eval'` for `script-src`; rely on nonces. |
+| 8 | REQUIRED | Add a `payroll.payslip.latestForEmployee(employeeId)` server endpoint; today `apps/web/app/(dashboard)/profile/page.tsx` fetches every payslip and sorts client-side. |
+| 9 | REQUIRED | Replace `apps/web/app/(dashboard)/profile/page.tsx:34` `"_"` sentinel string with the canonical `skipToken` (TRPC's `enabled: !!employeeId` is already set, so the cast is a workaround that breaks if the guard flips). |
+| 10 | REQUIRED | Encrypt `iqamaNumberEnc` / `bankIbanEnc` at the application layer; right now they're stored as plain text under a misleading `_enc` suffix. |
+| 11 | OPTIONAL | Move the 67-line `USER_MANUAL_PROMPT` constant in `apps/web/components/floating-chatbot.tsx` to `packages/llm/src/prompts/help.ts` and i18n. |
+| 12 | OPTIONAL | Move the 280-line Chatbot component itself behind `next/dynamic` so its bundle is only loaded when the user opens the panel. |
+| 13 | OPTIONAL | Refactor `apps/web/app/(dashboard)/page.tsx` "Present Today" metric to compute from real `attendance_records` instead of `Math.floor(employees.length * 0.85)`. |
+| 14 | OPTIONAL | Push `attendance.myMonthlySummary` and `attendance.monthlyReport` aggregations into SQL (`GROUP BY status`) instead of returning raw rows and reducing in JS. |
+
+### Verification — 2026-07-17 (round 3)
+
+- `pnpm run typecheck` → 15/15 packages pass after the fixes.
+- Re-ran `scripts/seed-rukn-energy.ts` → payslips now reflect 2% SANED.
+- Re-ran `scripts/smoke-demo.ts` → no regressions.

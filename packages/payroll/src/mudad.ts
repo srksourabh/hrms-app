@@ -79,8 +79,10 @@ export function generateMudadFile(input: MudadGenerationInput): MudadWageFile {
     return {
       employeeId:  payslip.employeeId,
       fullName:    emp?.fullName ?? "Unknown",
-      /** ⚠️ Iqama must be validated against Muqeem before inclusion */
-      iqamaNumber: emp?.nationality === "expat" ? null : null, // leave null until live
+      /** ⚠️ Iqama must be validated against Muqeem before inclusion.
+       *  Encrypted IDs are stored under `bank_iban_enc` / `iqama_number_enc`;
+       *  decoding them is out of scope for the demo, so we always emit null. */
+      iqamaNumber: null,
       /** ⚠️ IBAN must come from verified employee bank record */
       bankAccount: null,
       basic:       payslip.basic,

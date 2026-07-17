@@ -1,8 +1,13 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-  DATABASE_URL: z.string().url().default("postgresql://postgres:***@localhost:5432/hrms-app"),
-  AUTH_SECRET: z.string().min(32, "AUTH_SECRET must be at least 32 characters"),
+  DATABASE_URL: z.string().url(),
+  AUTH_SECRET: z
+    .string()
+    .min(32, "AUTH_SECRET must be at least 32 characters")
+    .refine((v) => !/dev-secret/i.test(v), {
+      message: "AUTH_SECRET cannot reuse the documented dev fallback",
+    }),
   AUTH_GOOGLE_ID: z.string().optional(),
   AUTH_GOOGLE_SECRET: z.string().optional(),
   REDIS_URL: z.string().default("redis://localhost:6379"),
@@ -16,7 +21,7 @@ const envSchema = z.object({
   // LLM provider configuration (see packages/llm).
   // PRD Section 4 documents Claude as the default; runtime provider is
   // overridable via LLM_PROVIDER for cases where the platform is run with
-  // a different vendor (e.g. Gemini 3.5 Flash). API key is required only
+  // a different vendor (e.g. Gemini 2.5 Flash). API key is required only
   // for the active provider.
   LLM_PROVIDER: z.enum(["claude", "gemini"]).default("claude"),
   ANTHROPIC_API_KEY: z.string().optional(),
@@ -35,16 +40,10 @@ function validateEnv(): Env {
 
   if (!parsed.success) {
     console.error("Invalid environment variables:", parsed.error.flatten().fieldErrors);
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("Invalid environment variables");
-    }
-    return envSchema.parse({
-      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/hrms-app",
-      AUTH_SECRET: "dev-secret-key-not-for-production-use-at-least-32-chars",
-      REDIS_URL: "redis://localhost:6379",
-      NEXT_PUBLIC_APP_URL: "http://localhost:3000",
-      NODE_ENV: "development",
-    });
+    throw new Error(
+      `Invalid environment variables: ${Object.keys(parsed.error.flatten().fieldErrors).join(", ")}. ` +
+        "Set DATABASE_URL and AUTH_SECRET (>=32 chars, not the documented dev fallback) before starting the app.",
+    );
   }
 
   return parsed.data;

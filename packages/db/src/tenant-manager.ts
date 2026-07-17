@@ -58,6 +58,11 @@ export function getTenantDb(schemaName: string) {
   });
   const db = drizzle(sql, { schema: tenantSchema });
 
+  // Tag the connection with its schema name so callers (e.g. invite.ts)
+  // can recover the schema without scanning tenants.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (db as any)._schemaName = schemaName;
+
   // Patch db.execute to run inside a transaction with SET LOCAL search_path.
   // This guarantees the SET and the query share a physical connection under
   // any pooler configuration.
@@ -128,7 +133,7 @@ function generateTenantDDL(): string {
       iqama_number_enc TEXT,
       passport_number_enc TEXT,
       bank_iban_enc TEXT,
-      nationality TEXT NOT NULL CHECK (nationality IN ('saudi', 'expat')),
+      nationality TEXT NOT NULL CHECK (nationality IN ('saudi', 'expat', 'gcc')),
       full_name TEXT NOT NULL,
       employment_status TEXT NOT NULL DEFAULT 'active' CHECK (employment_status IN ('active','terminated','suspended','on_leave')),
       hire_date DATE NOT NULL,

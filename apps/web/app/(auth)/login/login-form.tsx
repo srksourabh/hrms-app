@@ -6,12 +6,16 @@ import { useState } from "react";
 import { productBrand } from "@hrms-app/config/brand";
 import { BrandMark } from "~/components/brand/brand-lockup";
 
-const SAMPLE_USERS = [
-  { role: "HR Manager", email: "reem.alharbi@rukn-energy.example" },
-  { role: "HR Specialist", email: "aisha.alotaibi@rukn-energy.example" },
-  { role: "Department Manager", email: "fahad.alqahtani@rukn-energy.example" },
-  { role: "Employee", email: "omar.aldossary@rukn-energy.example" },
-];
+const DEMO_MODE_ENABLED = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+
+const SAMPLE_USERS = DEMO_MODE_ENABLED
+  ? [
+      { role: "HR Manager",         email: "reem.alharbi@rukn-energy.example" },
+      { role: "HR Specialist",      email: "aisha.alotaibi@rukn-energy.example" },
+      { role: "Department Manager", email: "fahad.alqahtani@rukn-energy.example" },
+      { role: "Employee",           email: "omar.aldossary@rukn-energy.example" },
+    ]
+  : [];
 
 export function LoginForm() {
   const router = useRouter();
@@ -151,32 +155,34 @@ export function LoginForm() {
         </div>
       </form>
 
-      <div className="border-t border-slate-200 bg-slate-50/60 px-6 py-4">
-        <details className="group">
-          <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 hover:text-slate-700">
-            Show sample credentials
-          </summary>
-          <div className="mt-3 space-y-1.5 text-xs text-slate-600">
-            <p className="text-[11px] text-slate-500">
-              Sign in to the Rukn Energy Services demo with any of these accounts. Password for all of them:
-              <span className="ml-1 rounded bg-slate-900 px-1.5 py-0.5 font-mono text-[11px] text-white">Rukn2026!</span>
-            </p>
-            <div className="mt-2 grid gap-1">
-              {SAMPLE_USERS.map((s) => (
-                <button
-                  key={s.email}
-                  type="button"
-                  onClick={() => fillSample(s)}
-                  className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-1.5 text-left text-[11px] hover:border-emerald-400 hover:bg-emerald-50"
-                >
-                  <span className="font-semibold text-slate-700">{s.role}</span>
-                  <span className="font-mono text-slate-500">{s.email}</span>
-                </button>
-              ))}
+      {SAMPLE_USERS.length > 0 && (
+        <div className="border-t border-slate-200 bg-slate-50/60 px-6 py-4">
+          <details className="group">
+            <summary className="cursor-pointer text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 hover:text-slate-700">
+              Show sample credentials
+            </summary>
+            <div className="mt-3 space-y-1.5 text-xs text-slate-600">
+              <p className="text-[11px] text-slate-500">
+                Sign in to the Rukn Energy Services demo with any of these accounts. Password for all of them:
+                <span className="ml-1 rounded bg-slate-900 px-1.5 py-0.5 font-mono text-[11px] text-white">Rukn2026!</span>
+              </p>
+              <div className="mt-2 grid gap-1">
+                {SAMPLE_USERS.map((s) => (
+                  <button
+                    key={s.email}
+                    type="button"
+                    onClick={() => fillSample(s)}
+                    className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-1.5 text-left text-[11px] hover:border-emerald-400 hover:bg-emerald-50"
+                  >
+                    <span className="font-semibold text-slate-700">{s.role}</span>
+                    <span className="font-mono text-slate-500">{s.email}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        </details>
-      </div>
+          </details>
+        </div>
+      )}
 
       <div className="px-6 pb-6 pt-2 text-center text-xs text-slate-500">
         Need help?{" "}

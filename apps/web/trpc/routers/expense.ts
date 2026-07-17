@@ -282,15 +282,7 @@ export const expenseRouter = createTRPCRouter({
       return { mine: 0, pendingMine: 0, pendingForApproval: 0, approvedThisMonth: 0, totalThisMonth: 0 };
     }
 
-    const mineRows = await ctx.db.execute(sql`
-      SELECT
-        COUNT(*)::int as total,
-        COUNT(*) FILTER (WHERE status = 'pending')::int as pending
-      FROM ${sql.identifier(ctx.tenantDb ? "" : "")} "expenses"
-      WHERE "employee_id" = ${userEmployeeId}
-    `).catch(() => [{ total: 0, pending: 0 }] as any);
-
-    // Plain Drizzle approach (more portable):
+    // Plain Drizzle query (more portable than raw SQL):
     const myExpenses = await ctx.db.query.expenses.findMany({
       where: eq(schema.tenant.expenses.employeeId, userEmployeeId),
     });
