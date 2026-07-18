@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { DashboardShell } from "~/components/dashboard-shell";
 import { EmployeeCommandCenter } from "~/components/demo/employee-command-center";
+import { DashboardProviders } from "~/components/dashboard-providers";
 import { productModules, totalPrdFeatures } from "~/lib/module-catalog";
 
 const featuredSlugs = [
@@ -95,13 +96,15 @@ export default async function RootPage() {
   if (needsOnboarding) redirect("/settings/company");
 
   return (
-    <DashboardShell user={session.user} regulatoryContext={session.user.regulatoryContext ?? "saudi"} preferredLanguage={session.user.preferredLanguage ?? "en"}>
-      {isEmployee && isDemo ? (
-        <EmployeeCommandCenter employeeId={session.user.employeeId} />
-      ) : (
-        <CommandCenter userName={session.user.name ?? "HR Manager"} role={session.user.role as AppRole} dbCounts={dbCounts} />
-      )}
-    </DashboardShell>
+    <DashboardProviders session={session}>
+      <DashboardShell user={session.user} regulatoryContext={session.user.regulatoryContext ?? "saudi"} preferredLanguage={session.user.preferredLanguage ?? "en"}>
+        {isEmployee && isDemo ? (
+          <EmployeeCommandCenter employeeId={session.user.employeeId} />
+        ) : (
+          <CommandCenter userName={session.user.name ?? "HR Manager"} role={session.user.role as AppRole} dbCounts={dbCounts} />
+        )}
+      </DashboardShell>
+    </DashboardProviders>
   );
 }
 
