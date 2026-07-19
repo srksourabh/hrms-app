@@ -312,18 +312,14 @@ export function getGosiRate(
 }
 
 export function getLeaveEntitlement(
-  nationality: NationalityCategory,
+  _nationality: NationalityCategory,
   asOfDate?: string
 ): RegulatoryConfig["leave"] {
   const cfg = getActiveConfig("saudi", asOfDate);
   if (!cfg) throw new Error("No active Saudi regulatory config found");
-  const base = cfg.leave.annual;
-  return {
-    ...cfg.leave,
-    annual: {
-      ...base,
-      // Saudi nationals get 30 days (21 + 9 additional)
-      annualDays: nationality === "saudi" ? base.annualDays + base.saudiAdditionalDays : base.annualDays,
-    },
-  };
+  // Annual leave is tenure-based (Article 111), not nationality-based. The base
+  // is 21 days/yr for everyone; the +`saudiAdditionalDays` (9) tenure bonus for
+  // >5 years of service is applied by the leave engine's entitlements(), so it
+  // is NOT added here. `_nationality` is retained for API compatibility.
+  return cfg.leave;
 }

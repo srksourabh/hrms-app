@@ -2,7 +2,8 @@
  * Saudi Statutory Leave Engine
  *
  * Implements all Saudi Labour Law leave entitlements:
- *  - Annual leave  (Article 109: 21 days for non-Saudi, 30 days for Saudi nationals)
+ *  - Annual leave  (Article 111: 21 days/yr up to 5 years of service,
+ *                   30 days/yr after 5 years — tenure-based, all nationalities)
  *  - Sick leave    (Article 131/134: 3-tier: full-pay / half-pay / unpaid)
  *  - Maternity     (Article 54: 10 weeks paid)
  *  - Hajj pilgrimage (Article 113: 10 days paid, 12 months service)
@@ -15,12 +16,12 @@
  *     Weekends and public holidays are NOT subtracted from leave day counts
  *     unless explicitly stated (Hajj: 10 calendar days).
  *
- * ⚠️  Saudi nationals (GCC included where applicable) receive enhanced
- *     entitlements where the law distinguishes nationality.
+ * ⚠️  Annual leave is tenure-based (21 → 30 after 5 years) for all employees;
+ *     nationality only affects specific programmes (e.g. Hajj, GOSI).
  *
  * Usage:
  *   const leave = new SaudiLeaveEngine(employee, "2026-07-15");
- *   leave.entitlements().annual.days;          // 30 for Saudi, 21 for expat
+ *   leave.entitlements().annual.days;          // 30 after 5 years, else 21
  *   leave.compute("annual", { start: "2026-08-01", end: "2026-08-10" }); // 10 days
  */
 
@@ -140,10 +141,14 @@ export class SaudiLeaveEngine {
    * `daysUsed` and `daysPending` must be injected from leave records in the DB.
    */
   entitlements(usedDays: Partial<Record<LeaveType, { used: number; pending: number }>> = {}): LeaveEntitlementSummary[] {
-    const isSaudi = this.employee.nationality === "saudi";
-    const annualDays = isSaudi
-      ? this.cfg.annual.annualDays + this.cfg.annual.saudiAdditionalDays
-      : this.cfg.annual.annualDays;
+    // Article 111: annual leave is TENURE-based, not nationality-based —
+    // 21 days/yr up to 5 years of service, 30 days/yr after 5 years, for every
+    // employee. (`saudiAdditionalDays` here is the +9 tenure bonus, not a
+    // citizen bonus.)
+    const annualDays =
+      this.yearsOfService() > 5
+        ? this.cfg.annual.annualDays + this.cfg.annual.saudiAdditionalDays
+        : this.cfg.annual.annualDays;
 
     return [
       {
