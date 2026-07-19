@@ -317,13 +317,15 @@ Grouped by workstream, ordered so blockers come first. Check off as completed.
 
 **Workstream A verification:** 48 payroll+validator tests pass; payroll package and web app typecheck clean. Remaining follow-ups are folded into later workstreams (B3 audit persistence, DB index hardening, stateful Art 79).
 
-### Workstream B — Access control, audit, sessions (P0)
-- [ ] B1. Gate `employee.update` salary fields behind `requireRole`; add object-level ownership; approval routing for HR Specialist.
-- [ ] B2. Add step-up re-auth for salary change and EOSB generation.
-- [ ] B3. Central audit helper (actor, timestamp, old/new, acting role) on every sensitive mutation; log failed logins.
-- [ ] B4. Make `audit_logs` append-only (revoke UPDATE/DELETE or DB trigger).
-- [ ] B5. Department-Manager scoping in query layer and leave-approval path.
-- [ ] B6. Tighten payslip/payroll/Qiwa list procedures to the access matrix (remove dept-mgr/recruiter over-exposure).
+### Workstream B — Access control, audit, sessions (P0) — ✅ MOSTLY COMPLETE (branch `fix/workstream-a-payroll-compliance`)
+- [x] B1. Field-scoped `employee.update`: salary fields limited to super_admin/hr_manager/payroll_admin; hr_specialist salary change rejected (must be HR-Manager approved); profile fields limited to HR roles; create restricted to HR. _(B1/B3/B6 commit)_
+- [ ] B2. **Deferred to Workstream C** (step-up re-auth needs the session mechanism built in C).
+- [x] B3. Central audit helper (`apps/web/trpc/audit.ts`) — actor, acting role, old/new, IP — on employee create/update/salary_change/delete, payroll.run, payroll.reopen, settlement.create; read-only audit router (HR Manager/super admin). _(B1/B3/B6 commit)_
+- [x] B4. `audit_logs` append-only migration (`0007_audit_logs_append_only.sql` + `apply-migration-0007.js`) — **not yet run against prod** (needs approval). _(B4 commit)_
+- [x] B5. Department-Manager scoping: `getManagedDepartmentIds` scopes `employee.list` and blocks cross-department leave approval. _(B5 commit)_
+- [x] B6. Payslip/payroll-run/wage-file/qiwa-contract list+getById restricted to `PAYROLL_VIEW_ROLES` (removed dept-mgr/recruiter salary over-exposure). _(B1/B3/B6 commit)_
+
+**Workstream B verification:** web app typechecks clean. Follow-ups: run the B4 migration; build the persisted salary-change approval queue (currently hr_specialist salary edits are blocked, not queued); failed-login logging lands with C (auth package); B2 step-up with C.
 
 ### Workstream C — Authentication hardening (P0)
 - [ ] C1. Real password reset: single-use, time-limited, hashed token using `verification_tokens`.
