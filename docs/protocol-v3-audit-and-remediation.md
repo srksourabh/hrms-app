@@ -337,13 +337,15 @@ Grouped by workstream, ordered so blockers come first. Check off as completed.
 
 **Workstream C verification:** all touched packages typecheck clean; TOTP + password-policy tests pass. Migrations 0007 + 0008 must be run against prod.
 
-### Workstream D — Data integrity & lifecycle (P0/P1)
-- [ ] D1. National-ID field + iqama unique constraints + format regex + duplicate check on create.
-- [ ] D2. Soft-delete (`deletedAt`); block hard-delete with payroll history; document retention rule.
-- [ ] D3. Remove stack-trace leak on login error; delete `api/auth/test/route.ts`; remove hardcoded migrate/seed token default.
-- [ ] D4. Leave: wire approval→balance decrement; call engine `validate()` (balance, overlap, holiday exclusion) on create; exclude unpaid leave from EOSB service.
-- [ ] D5. Tenure-based leave entitlement (21 ≤5y / 30 >5y for all) replacing nationality logic.
-- [ ] D6. Attendance→payroll bridge: absences deduct, computed overtime flows to pay.
+### Workstream D — Data integrity & lifecycle (P0/P1) — ✅ COMPLETE (branch `fix/workstream-a-payroll-compliance`)
+- [x] D1. National-ID/iqama format validation (10 digits, Saudi→1/expat→2) on create+update; duplicate check in `employee.create`; migration 0009 partial unique index (**not run**). _(D1/D2 commit)_
+- [x] D2. Soft-delete via `employmentStatus="terminated"` (preserves history, no schema-coupling risk). _(D1/D2 commit)_ Follow-up: dedicated `deletedAt` + retention/erasure policy (PDPL-003).
+- [x] D3. Deleted the `/api/auth/test` auth-bypass route; removed the login stack-trace leak; migrate/seed routes fail closed (no hardcoded token default). _(D3 commit)_
+- [x] D4. Leave: overlap + balance checks on create; balance decrement on approval / restore on un-approval; EOSB excludes `unpaidLeaveDays` from service. _(D4 commit)_ Follow-up: public-holiday exclusion in day count (LEV-003); settlement router to compute/pass unpaidLeaveDays.
+- [x] D5. Tenure-based annual leave (21 ≤5y / 30 >5y for all); removed the nationality double-count. _(D5 commit)_
+- [x] D6. Attendance→payroll bridge: overtime pay + absence deductions from attendance records feed the engine; leaver proration wired via terminationDate. _(D6 commit)_
+
+**Workstream D verification:** all touched packages typecheck clean; payroll + validator tests pass (leave, employee-ID, EOSB unpaid-leave). Migration 0009 to be run with 0007+0008.
 
 ### Workstream E — Saudization / Nitaqat & contracts (P1)
 - [ ] E1. Entity-based Nitaqat log-formula band engine; remove Yellow tier.
