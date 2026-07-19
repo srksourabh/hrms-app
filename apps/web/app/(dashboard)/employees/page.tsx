@@ -98,8 +98,17 @@ export default function EmployeesPage() {
                 data?.map((employee: any) => (
                   <TableRow
                     key={employee.id}
-                    className="cursor-pointer"
+                    className="cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-700/30"
+                    role="link"
+                    tabIndex={0}
+                    aria-label={`Open ${employee.fullName}`}
                     onClick={() => router.push(`/employees/${employee.id}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        router.push(`/employees/${employee.id}`);
+                      }
+                    }}
                   >
                     <TableCell className="font-medium">{employee.fullName}</TableCell>
                     <TableCell>{employee.department?.name ?? "-"}</TableCell>

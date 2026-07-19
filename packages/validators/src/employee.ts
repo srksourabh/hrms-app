@@ -72,7 +72,9 @@ export const updateEmployeeSchema = employeeBaseSchema.partial().superRefine((da
 export const employeeQuerySchema = paginationSchema.extend({
   status: z.enum(["active", "terminated", "suspended", "on_leave"]).optional().describe("Filter by employment status"),
   departmentId: uuidSchema.optional().describe("Filter by department"),
-  search: z.string().max(200).optional().describe("Search text on full name"),
+  search: z.string().max(200).optional().describe("Search text on full name (English or Arabic)"),
+  sortBy: z.enum(["fullName", "hireDate", "createdAt"]).optional().describe("Column to sort by"),
+  sortDir: z.enum(["asc", "desc"]).default("desc").describe("Sort direction"),
 });
 
 export type CreateEmployeeInput = z.infer<typeof createEmployeeSchema>;

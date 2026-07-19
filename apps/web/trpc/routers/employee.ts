@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, companyProcedure, protectedProcedure, requireRole } from "../server";
 import { schema } from "@hrms-app/db";
 import { createEmployeeSchema, updateEmployeeSchema, employeeQuerySchema } from "@hrms-app/validators";
-import { and, eq, like, desc, count, inArray } from "drizzle-orm";
+import { and, eq, like, desc, asc, count, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { writeAudit, SALARY_FIELDS, pickChanged } from "../audit";
 import { getManagedDepartmentIds } from "../scoping";
@@ -28,10 +28,18 @@ export const employeeRouter = createTRPCRouter({
       }
       const active = conditions.filter(Boolean) as ReturnType<typeof eq>[];
       const where = active.length > 0 ? and(...active) : undefined;
+
+      // Sortable columns (LIST-003), whitelisted to avoid arbitrary-column sort.
+      const sortColumn =
+        input?.sortBy === "fullName" ? schema.tenant.employees.fullName
+        : input?.sortBy === "hireDate" ? schema.tenant.employees.hireDate
+        : schema.tenant.employees.createdAt;
+      const orderBy = (input?.sortDir ?? "desc") === "asc" ? asc(sortColumn) : desc(sortColumn);
+
       return await ctx.db.query.employees.findMany({
         where,
         with: { department: true },
-        orderBy: desc(schema.tenant.employees.createdAt),
+        orderBy,
         limit: input?.pageSize ?? 20,
         offset: input?.page ? (input.page - 1) * (input.pageSize ?? 20) : 0,
       });
