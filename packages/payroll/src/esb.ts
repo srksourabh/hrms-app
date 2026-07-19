@@ -27,8 +27,10 @@
  * │   Art 81 — employer-fault termination                        │
  * ├──────────────────────────────────────────────────────────────┤
  * │ Zero EOSB:                                                    │
- * │   Art 80 — dismissal for cause (requires documented evidence) │
+ * │   Art 80 — dismissal for cause ("termination_for_cause";     │
+ * │           requires documented Art 57 investigation)          │
  * │   Resignation before completing probation                    │
+ * │ (A plain employer "termination" without cause pays FULL EOSB) │
  * └──────────────────────────────────────────────────────────────┘
  *
  * Monthly salary (Actual Wage) = basic + housing + transport
@@ -93,7 +95,7 @@ export function calculateFinalSettlement(input: FinalSettlementInput): FinalSett
   }
 
   // ── Termination for cause (Article 80) ────────────────────────────────
-  if (separationReason === "termination") {
+  if (separationReason === "termination_for_cause") {
     warnings.push(
       "Termination for cause claimed — EOSB is zero under Article 80 only if " +
       "a formal investigation (Article 57) has been completed. " +
@@ -185,8 +187,15 @@ export function calculateFinalSettlement(input: FinalSettlementInput): FinalSett
     };
   }
 
-  // ── End of contract / termination by employer ─────────────────────────
-  if (separationReason === "end_of_contract" || separationReason === "mutual_termination") {
+  // ── End of contract / termination by employer (no cause) ───────────────
+  // Article 84: a no-fault employer termination pays the full EOSB, same as a
+  // fixed-term contract reaching its natural end. Article 80 for-cause zero is
+  // handled above as a distinct reason ("termination_for_cause").
+  if (
+    separationReason === "termination" ||
+    separationReason === "end_of_contract" ||
+    separationReason === "mutual_termination"
+  ) {
     if (days > 0 && days < 30) {
       warnings.push(
         `Partial month: ${days} additional days — confirm whether the partial period should be included per the contract.`

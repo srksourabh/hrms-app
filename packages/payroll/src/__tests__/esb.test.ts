@@ -55,9 +55,25 @@ describe("calculateFinalSettlement", () => {
       basicSalary:        10000,
       housingAllowance:   0,
       transportAllowance: 0,
-      separationReason:   "termination",
+      separationReason:   "termination_for_cause",
     }));
     expect(result.eosbAmount).toBe(0);
     expect(result.requiresHrReview).toBe(true);
+  });
+
+  it("EOSB-005: no-cause employer termination pays full award (15,000 @ 5yr = 37,500)", () => {
+    // Full EOSB = 0.5 × 15000 × 5 = 37,500. A plain "termination" (no cause)
+    // must NOT be treated as an Article 80 zero.
+    const result = calculateFinalSettlement(baseInput({
+      hireDate:           "2020-01-01",
+      terminationDate:    "2025-01-01",
+      basicSalary:        15000,
+      housingAllowance:   0,
+      transportAllowance: 0,
+      separationReason:   "termination",
+    }));
+    expect(result.eosbAmount).toBeGreaterThan(37400);
+    expect(result.eosbAmount).toBeLessThan(37600);
+    expect(result.eosbResignationFraction).toBe(1);
   });
 });

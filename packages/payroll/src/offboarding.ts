@@ -276,7 +276,22 @@ export class TerminationWorkflow {
       };
     }
 
-    // Employer-initiated: Article 80 or 81
+    // Employer termination WITHOUT cause: no Article 80/81 grounds needed;
+    // full EOSB is due (the for-cause path is "termination_for_cause").
+    if (reason === "termination") {
+      return {
+        article: "none",
+        mandatory: false,
+        grounds: "Employer termination without cause — full EOSB due, no misconduct alleged",
+        evidenceSufficient: true,
+        investigationComplete: true,
+        gaps: [],
+        requiresLegalReview: false,
+      };
+    }
+
+    // Employer-initiated for cause: Article 80 or 81 ("termination_for_cause"
+    // or "employer_fault")
     const isArticle81 = allegedGrossMisconduct;
     const article = isArticle81 ? "81" : "80";
 
@@ -561,11 +576,13 @@ export class TerminationWorkflow {
   private reasonLabel(reason: SeparationReason): string {
     const labels: Record<SeparationReason, string> = {
       resignation: "Resignation — employee-initiated",
-      termination: "Termination — employer-initiated for cause",
+      termination: "Termination — employer-initiated, without cause (full EOSB)",
+      termination_for_cause: "Termination for cause — Article 80 dismissal",
       end_of_contract: "End of fixed-term contract",
       mutual_termination: "Mutual agreement",
       force_majeure: "Force majeure",
       death: "Death of employee",
+      employer_fault: "Employer fault — Article 81 (full EOSB, no notice)",
     };
     return labels[reason];
   }

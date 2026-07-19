@@ -141,7 +141,8 @@ export interface OvertimeViolation {
 
 export type SeparationReason =
   | "resignation"
-  | "termination"
+  | "termination"            // employer termination WITHOUT cause — full EOSB (Art 84)
+  | "termination_for_cause"  // Article 80 dismissal for cause — zero EOSB + documented investigation
   | "end_of_contract"
   | "mutual_termination"
   | "force_majeure"
