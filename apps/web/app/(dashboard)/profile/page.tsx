@@ -40,6 +40,9 @@ export default function ProfilePage() {
   // Live attendance history (calendar).
   const history = api.attendance.myHistory.useQuery(undefined, { enabled: !!employeeId });
 
+  // Self-service: the employee's own performance goals.
+  const goals = api.retention.goal.mine.useQuery();
+
   const initials = useMemo(() => {
     const sourceName = employee.data?.fullName ?? name ?? "?";
     return sourceName.split(" ").map((p: string) => p[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
@@ -160,6 +163,48 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
       </section>
+
+      {/* My goals */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">My goals</p>
+            <p className="mt-0.5 text-xs text-slate-500">Performance goals agreed with your manager</p>
+          </div>
+          <Link href="/modules/performance-goals" className="text-xs font-semibold text-emerald-700 hover:underline">
+            Open goals →
+          </Link>
+        </CardHeader>
+        <CardContent>
+          {goals.isLoading ? (
+            <p className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">Loading goals…</p>
+          ) : goals.data && goals.data.length > 0 ? (
+            <div className="space-y-3">
+              {goals.data.map((goal: { id: string; title: string; status: string; progress: number | null; endDate: string | null }) => (
+                <div key={goal.id} className="rounded-2xl bg-slate-50 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-slate-900">{goal.title}</p>
+                    <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold capitalize text-slate-600 ring-1 ring-slate-200">
+                      {goal.status.replace(/_/g, " ")}
+                    </span>
+                  </div>
+                  <div className="mt-3 h-2 rounded-full bg-slate-200">
+                    <div className="h-2 rounded-full bg-emerald-700" style={{ width: `${goal.progress ?? 0}%` }} />
+                  </div>
+                  <div className="mt-2 flex justify-between text-xs text-slate-500">
+                    <span>{goal.progress ?? 0}% complete</span>
+                    <span>Due {goal.endDate ?? "—"}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">
+              No goals yet — agree a goal with your manager.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Attendance calendar — last 30 days */}
       <Card>

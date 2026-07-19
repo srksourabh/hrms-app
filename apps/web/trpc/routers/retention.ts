@@ -5,6 +5,15 @@ import { goalStatusEnum, createGoalSchema, updateGoalSchema, goalQuerySchema, cr
 import { and, eq, desc } from "drizzle-orm";
 export const retentionRouter = createTRPCRouter({
   goal: createTRPCRouter({
+    // Self-service: the current employee's own goals (for the profile page).
+    mine: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user.employeeId) return [];
+      return await ctx.db.query.goals.findMany({
+        where: eq(schema.tenant.goals.employeeId, ctx.user.employeeId),
+        orderBy: desc(schema.tenant.goals.createdAt),
+        limit: 10,
+      });
+    }),
     list: protectedProcedure
       .input(goalQuerySchema.optional().default({}))
       .query(async ({ ctx, input }) => {

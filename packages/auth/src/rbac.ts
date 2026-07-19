@@ -196,6 +196,7 @@ const employeeProcedures = new Set([
   "employee.exportMyData",
   "payroll.payslip.myLatest",
   "settlement.simulateOwn",
+  "retention.goal.mine",
 ]);
 
 const candidateProcedures = new Set([
