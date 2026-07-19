@@ -5,6 +5,7 @@ import { createFinalSettlementSchema } from "@hrms-app/validators";
 import { calculateFinalSettlement, qualifiesForArt87FullAward } from "@hrms-app/payroll";
 import { TRPCError } from "@trpc/server";
 import { and, eq, desc } from "drizzle-orm";
+import { writeAudit } from "../audit";
 
 function toNumber(value: string | null | undefined): number {
   return value ? Number.parseFloat(value) : 0;
@@ -151,6 +152,18 @@ export const settlementRouter = createTRPCRouter({
           exitReason: input.exitReason,
         })
         .returning();
+
+      await writeAudit(ctx, {
+        action: "settlement.create",
+        entityType: "final_settlement",
+        entityId: settlement?.id ?? input.employeeId,
+        newValue: {
+          employeeId: input.employeeId,
+          separationReason: input.separationReason,
+          esbAmount: eosb.eosbAmount,
+          terminationDate: input.terminationDate,
+        },
+      });
 
       return {
         ...settlement,

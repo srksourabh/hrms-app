@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, companyProcedure, protectedProcedure, requireRole } from "../server";
+import { createTRPCRouter, companyProcedure, protectedProcedure, requireRole, PAYROLL_VIEW_ROLES } from "../server";
 import { schema } from "@hrms-app/db";
 import { TRPCError } from "@trpc/server";
 import {
@@ -11,6 +11,7 @@ import {
 import { orchestratePayrollRun, generateMudadFile, mudadToXml, mudadToCsv } from "@hrms-app/payroll";
 import { and, eq, desc } from "drizzle-orm";
 import type { EmployeeContext, Nationality } from "@hrms-app/payroll";
+import { writeAudit } from "../audit";
 
 function parseNumeric(value: string | null | undefined): number {
   return value ? Number.parseFloat(value) : 0;
@@ -34,7 +35,7 @@ function toEmployeeContext(row: typeof schema.tenant.employees.$inferSelect): Em
 
 export const payrollRouter = createTRPCRouter({
   run: createTRPCRouter({
-    list: companyProcedure
+    list: requireRole(...PAYROLL_VIEW_ROLES)
       .input(payrollQuerySchema.optional().default({}))
       .query(async ({ ctx, input }) => {
         const conditions: ReturnType<typeof eq>[] = [];
@@ -130,6 +131,17 @@ export const payrollRouter = createTRPCRouter({
           .where(eq(schema.tenant.payrollRuns.id, run.id))
           .returning();
 
+        await writeAudit(ctx, {
+          action: "payroll.run",
+          entityType: "payroll_run",
+          entityId: run.id,
+          newValue: {
+            periodMonth: input.periodMonth,
+            employeeCount: result.payslips.length,
+            totalAmount: result.totalAmount,
+          },
+        });
+
         return updatedRun;
       }),
 
@@ -183,12 +195,17 @@ export const payrollRouter = createTRPCRouter({
           .set({ status: "draft" })
           .where(eq(schema.tenant.payrollRuns.id, input.id))
           .returning();
-        // TODO(B3): write audit entry { actor: ctx.user.id, action: "payroll.reopen",
-        //   entity: run.id, reason: input.reason, periodMonth: current.periodMonth }.
+        await writeAudit(ctx, {
+          action: "payroll.reopen",
+          entityType: "payroll_run",
+          entityId: input.id,
+          oldValue: { status: current.status, periodMonth: current.periodMonth },
+          newValue: { status: "draft", reason: input.reason },
+        });
         return run;
       }),
 
-    getById: companyProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
+    getById: requireRole(...PAYROLL_VIEW_ROLES).input(z.string().uuid()).query(async ({ ctx, input }) => {
       return await ctx.db.query.payrollRuns.findFirst({
         where: eq(schema.tenant.payrollRuns.id, input),
         with: { payslips: { with: { employee: true } }, complianceChecks: true, wageFiles: true },
@@ -197,7 +214,7 @@ export const payrollRouter = createTRPCRouter({
   }),
 
   payslip: createTRPCRouter({
-    list: companyProcedure
+    list: requireRole(...PAYROLL_VIEW_ROLES)
       .input(
         z
           .object({
@@ -235,7 +252,7 @@ export const payrollRouter = createTRPCRouter({
       });
     }),
 
-    getById: companyProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
+    getById: requireRole(...PAYROLL_VIEW_ROLES).input(z.string().uuid()).query(async ({ ctx, input }) => {
       return await ctx.db.query.payslips.findFirst({
         where: eq(schema.tenant.payslips.id, input),
         with: { employee: true, payrollRun: true },
@@ -251,7 +268,7 @@ export const payrollRouter = createTRPCRouter({
   }),
 
   compliance: createTRPCRouter({
-    list: companyProcedure
+    list: requireRole(...PAYROLL_VIEW_ROLES)
       .input(
         z
           .object({

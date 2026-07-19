@@ -83,6 +83,13 @@ export const companyProcedure = protectedProcedure.use(({ ctx, next }) => {
   return next({ ctx });
 });
 
+/**
+ * Roles permitted to view company-wide payroll/payslip/contract data
+ * (those holding `payroll:view_company`). Excludes department_manager and
+ * recruiter, who must not see salary data (RBAC-004, access matrix).
+ */
+export const PAYROLL_VIEW_ROLES = ["super_admin", "hr_manager", "hr_specialist", "payroll_admin"] as const;
+
 export function requireRole(...roles: string[]) {
   return t.procedure.use(({ ctx, next }) => {
     if (!ctx.session?.user) throw new TRPCError({ code: "UNAUTHORIZED" });
