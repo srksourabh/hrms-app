@@ -3,8 +3,55 @@ import Credentials from 'next-auth/providers/credentials';
 import { adminDb } from '@hrms-app/db';
 import { users, tenants } from '@hrms-app/db';
 import { compare } from 'bcryptjs';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { resolveDemoIdentity } from './demo-identities';
+
+// ── Account lockout (C2) ──────────────────────────────────────────────────────
+// Durable per-account lockout with exponential backoff, stored on the users
+// table. All DB access is exception-wrapped so login keeps working even if the
+// lockout columns have not been migrated yet (migration 0008).
+const MAX_FAILED_ATTEMPTS = 5;
+
+async function getLockState(userId: string): Promise<{ attempts: number; lockedUntil: Date | null } | null> {
+  try {
+    const rows = (await adminDb.execute(
+      sql`SELECT failed_login_attempts AS attempts, locked_until AS locked_until FROM users WHERE id = ${userId}`,
+    )) as unknown as Array<{ attempts: number | null; locked_until: string | Date | null }>;
+    const row = rows?.[0];
+    if (!row) return null;
+    return {
+      attempts: Number(row.attempts ?? 0),
+      lockedUntil: row.locked_until ? new Date(row.locked_until) : null,
+    };
+  } catch {
+    return null; // columns not present yet — lockout disabled until migrated
+  }
+}
+
+async function recordFailedAttempt(userId: string, priorAttempts: number): Promise<void> {
+  const attempts = priorAttempts + 1;
+  try {
+    if (attempts >= MAX_FAILED_ATTEMPTS) {
+      const lockMinutes = Math.min(5 * 2 ** (attempts - MAX_FAILED_ATTEMPTS), 60);
+      const until = new Date(Date.now() + lockMinutes * 60_000).toISOString();
+      await adminDb.execute(
+        sql`UPDATE users SET failed_login_attempts = ${attempts}, locked_until = ${until} WHERE id = ${userId}`,
+      );
+    } else {
+      await adminDb.execute(sql`UPDATE users SET failed_login_attempts = ${attempts} WHERE id = ${userId}`);
+    }
+  } catch {
+    /* lockout columns not migrated — best effort */
+  }
+}
+
+async function clearLockState(userId: string): Promise<void> {
+  try {
+    await adminDb.execute(sql`UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ${userId}`);
+  } catch {
+    /* best effort */
+  }
+}
 
 type AuthResult = ReturnType<typeof NextAuth>;
 
@@ -79,8 +126,25 @@ const nextAuthResult: AuthResult = NextAuth({
 
         const user = await adminDb.query.users.findFirst({ where: eq(users.email, email) });
         if (!user || !user.passwordHash) return null;
+
+        // Reject if the account is currently locked.
+        const lock = await getLockState(user.id);
+        if (lock?.lockedUntil && lock.lockedUntil > new Date()) {
+          console.warn('[auth] login blocked: account temporarily locked');
+          return null;
+        }
+
         const valid = await compare(password, user.passwordHash);
-        if (!valid) return null;
+        if (!valid) {
+          await recordFailedAttempt(user.id, lock?.attempts ?? 0);
+          console.warn('[auth] failed login attempt for', email);
+          return null;
+        }
+
+        // Successful login — clear any prior failed-attempt state.
+        if (lock && (lock.attempts > 0 || lock.lockedUntil)) {
+          await clearLockState(user.id);
+        }
 
         return {
           id: user.id,

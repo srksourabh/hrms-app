@@ -28,6 +28,16 @@ export async function middleware(request: NextRequest) {
   const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
   const isApiRoute = API_ROUTES.some((route) => pathname.startsWith(route));
 
+  // Tight limit on credential login attempts (brute-force front line, C2).
+  // Complemented by durable per-account lockout in the authorize() callback.
+  const isLoginAttempt = pathname.startsWith("/api/auth/callback/credentials");
+  if (isLoginAttempt && !checkRateLimit(`login:${ip}`, 5, 60_000)) {
+    return new NextResponse(JSON.stringify({ error: "Too many login attempts. Please wait a minute and try again." }), {
+      status: 429,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   if (isAuthRoute && !checkRateLimit(`auth:${ip}`, 10, 1000)) {
     return new NextResponse(JSON.stringify({ error: "Too many requests" }), {
       status: 429,
