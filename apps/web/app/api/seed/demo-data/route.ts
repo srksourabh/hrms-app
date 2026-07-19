@@ -16,7 +16,7 @@ import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const MIGRATION_TOKEN = process.env.MIGRATION_TOKEN ?? "demo-fix-2026";
+const MIGRATION_TOKEN = process.env.MIGRATION_TOKEN;
 
 async function getSchemaName(): Promise<string> {
   const rows = await adminDb.execute(
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
   const provided =
     req.headers.get("x-migration-token") ??
     new URL(req.url).searchParams.get("token");
-  if (provided !== MIGRATION_TOKEN) {
+  if (!MIGRATION_TOKEN || provided !== MIGRATION_TOKEN) {
     return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   }
 
