@@ -38,6 +38,7 @@ function currentMonth(): string {
 export default function MyAttendancePage() {
   const [month, setMonth] = useState<string>(currentMonth());
   const [location, setLocation] = useState<LocationPickerValue | null>(null);
+  const [punchError, setPunchError] = useState<string | null>(null);
   const utils = api.useUtils();
 
   const { data: today, isLoading: loadingToday } = api.attendance.today.useQuery();
@@ -46,17 +47,21 @@ export default function MyAttendancePage() {
 
   const punchInMutation = api.attendance.punchIn.useMutation({
     onSuccess: () => {
+      setPunchError(null);
       utils.attendance.today.invalidate();
       utils.attendance.myHistory.invalidate();
       utils.attendance.myMonthlySummary.invalidate({ month });
     },
+    onError: (e) => setPunchError(e.message),
   });
   const punchOutMutation = api.attendance.punchOut.useMutation({
     onSuccess: () => {
+      setPunchError(null);
       utils.attendance.today.invalidate();
       utils.attendance.myHistory.invalidate();
       utils.attendance.myMonthlySummary.invalidate({ month });
     },
+    onError: (e) => setPunchError(e.message),
   });
 
   const records = today?.records ?? [];
@@ -165,6 +170,13 @@ export default function MyAttendancePage() {
                   variant="compact"
                 />
               </div>
+
+              {punchError && (
+                <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 text-red-700 shrink-0" />
+                  <div className="text-red-900">{punchError}</div>
+                </div>
+              )}
 
               <div className="flex flex-wrap gap-3 pt-1">
                 <Button

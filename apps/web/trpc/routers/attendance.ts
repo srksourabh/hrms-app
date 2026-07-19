@@ -21,14 +21,15 @@ import {
 } from "@hrms-app/validators";
 
 async function resolveEmployeeId(ctx: any): Promise<string | null> {
-  if (ctx.user.role === "employee") {
-    if (ctx.user.employeeId) return ctx.user.employeeId;
-    const user = await ctx.adminDb.query.users.findFirst({
-      where: (users: any, { eq }: any) => eq(users.id, ctx.user.id!),
-    });
-    return user?.employeeId ?? null;
-  }
-  return null;
+  // Any user linked to an employee record can act on their own attendance,
+  // regardless of role — a manager or admin may also be an employee who
+  // punches in. Previously this only resolved for the "employee" role, so
+  // every other role's punch failed with "not linked".
+  if (ctx.user.employeeId) return ctx.user.employeeId;
+  const user = await ctx.adminDb.query.users.findFirst({
+    where: (users: any, { eq }: any) => eq(users.id, ctx.user.id!),
+  });
+  return user?.employeeId ?? null;
 }
 
 function combineDateTime(date: string, time: string): Date {
