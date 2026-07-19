@@ -37,6 +37,8 @@ export interface TerminationInitiation {
   noticeDate: string;
   /** Whether the contract is for a fixed term (definite) or open-ended (indefinite) */
   contractType: "definite" | "indefinite";
+  /** Contract end date (fixed-term only) — used for Article 77 remaining-period compensation. */
+  contractEndDate?: string;
   /** Whether Article 80 / 81 gross misconduct is alleged (for dismissal) */
   allegedGrossMisconduct: boolean;
   /** HR notes */
@@ -214,6 +216,41 @@ export class TerminationWorkflow {
       gardenLeave,
       salaryInLieu,
       jobSearchHoursPerWeek: jobSearchHours ?? 0,
+    };
+  }
+
+  // ─── Article 77 Early-Termination Compensation ─────────────────────────────
+
+  /**
+   * Article 77 compensation for termination without a valid reason:
+   *  - Fixed-term (definite): wages for the remaining contract period.
+   *  - Indefinite: 15 days' wage per year of service, with a 2-month floor.
+   * Returns the statutory amount; the paying direction depends on who
+   * terminated without cause.
+   */
+  computeArt77Compensation(): { amount: number; basis: string } {
+    const monthlyWage =
+      this.employee.salaryBasic + this.employee.salaryHousing + this.employee.salaryTransport;
+
+    if (this.initiation.contractType === "definite") {
+      const end = this.initiation.contractEndDate;
+      if (!end) {
+        return { amount: 0, basis: "fixed-term contract end date missing" };
+      }
+      const remainingMonths = monthsBetweenFractional(this.initiation.lastWorkingDay, end);
+      const amount = round2(monthlyWage * Math.max(0, remainingMonths));
+      return { amount, basis: "remaining-period wages (Article 77, fixed-term)" };
+    }
+
+    // Indefinite: 15 days per year of service, minimum 2 months.
+    const years =
+      Math.max(0, daysBetweenUtc(this.employee.hireDate, this.employee.terminationDate)) / 365.25;
+    const dailyWage = monthlyWage / 30;
+    const fifteenDayComp = dailyWage * 15 * years;
+    const twoMonthFloor = monthlyWage * 2;
+    return {
+      amount: round2(Math.max(fifteenDayComp, twoMonthFloor)),
+      basis: "15 days/yr, minimum 2 months (Article 77, indefinite)",
     };
   }
 
@@ -611,6 +648,55 @@ export class TerminationWorkflow {
       (new Date(end).getTime() - new Date(start).getTime()) / (1000 * 60 * 60 * 24)
     );
   }
+}
+
+// ─── Module helpers ─────────────────────────────────────────────────────────
+
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+function daysBetweenUtc(start: string, end: string): number {
+  return Math.round((new Date(end).getTime() - new Date(start).getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function monthsBetweenFractional(start: string, end: string): number {
+  const a = new Date(start);
+  const b = new Date(end);
+  return (
+    (b.getUTCFullYear() - a.getUTCFullYear()) * 12 +
+    (b.getUTCMonth() - a.getUTCMonth()) +
+    (b.getUTCDate() - a.getUTCDate()) / 30
+  );
+}
+
+/**
+ * Article 79 resignation lifecycle key dates.
+ *  - The employee may withdraw the resignation within 7 days.
+ *  - Absent an employer response, the resignation is deemed accepted after 30
+ *    days (auto-accept).
+ *  - The employer may defer the effective date by up to 60 days with a written
+ *    reason.
+ * This is the date computation; the stateful workflow (persisted resignation
+ * records + status transitions) is a separate feature.
+ */
+export function computeResignationLifecycle(submittedDate: string): {
+  submittedDate: string;
+  withdrawalDeadline: string;
+  autoAcceptDate: string;
+  maxEmployerDeferralDate: string;
+} {
+  const add = (days: number): string => {
+    const d = new Date(submittedDate);
+    d.setUTCDate(d.getUTCDate() + days);
+    return d.toISOString().split("T")[0] as string;
+  };
+  return {
+    submittedDate,
+    withdrawalDeadline: add(7),
+    autoAcceptDate: add(30),
+    maxEmployerDeferralDate: add(60),
+  };
 }
 
 // Re-export for convenience

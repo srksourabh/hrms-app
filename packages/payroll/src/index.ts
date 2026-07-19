@@ -5,7 +5,7 @@ export { SaudiLeaveEngine, computeLeave, getLeaveBalance } from "./leave";
 export type { LeaveType, LeaveStatus, LeaveRequest, LeaveEntitlementSummary, LeaveBalance, LeaveCalculation, LeavePeriod } from "./leave";
 export { DisciplineEngine } from "./discipline";
 export type { OffenceCategory, SanctionLevel, Offence, DisciplinaryRecord, SanctionRecommendation, ClockStatus } from "./discipline";
-export { TerminationWorkflow } from "./offboarding";
+export { TerminationWorkflow, computeResignationLifecycle } from "./offboarding";
 export type { TerminationInitiator, TerminationInitiation, NoticePeriod, GroundsCheck, ImmigrationRepatriationStep, ServiceCertificate, NitaqatImpact, OffboardingChecklist } from "./offboarding";
 export { getActiveConfig, getConfigHistory, upsertConfig, getGosiRate, getLeaveEntitlement } from "./regulatory-config";
 export type { RegulatoryConfig, GosiConfig, LeaveEntitlement, SickLeaveEntitlement, MaternityLeaveEntitlement, WorkingTimeConfig, NitaqatConfig, DisciplineConfig, EOSBConfig } from "./regulatory-config";

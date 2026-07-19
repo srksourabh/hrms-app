@@ -147,7 +147,8 @@ export const createOfferSchema = z.object({
   bonusStructure: z.string().optional(),
   benefits: z.record(z.unknown()).optional(),
   startDate: z.string().date(),
-  probationMonths: z.number().int().min(0).max(12).default(3),
+  // Statutory probation cap: 180 days (6 months) — Saudi Labour Law (CON-004).
+  probationMonths: z.number().int().min(0).max(6, "Probation may not exceed 6 months (180 days)").default(3),
   offerLetterUrl: z.string().url().optional(),
   expiresAt: z.string().datetime().optional(),
   createdById: z.string().uuid().optional(),
@@ -163,7 +164,7 @@ export const updateOfferSchema = z.object({
   bonusStructure: z.string().optional(),
   benefits: z.record(z.unknown()).optional(),
   startDate: z.string().date().optional(),
-  probationMonths: z.number().int().min(0).max(12).optional(),
+  probationMonths: z.number().int().min(0).max(6, "Probation may not exceed 6 months (180 days)").optional(),
   offerLetterUrl: z.string().url().optional(),
   declineReason: z.string().optional(),
   expiresAt: z.string().datetime().optional(),
