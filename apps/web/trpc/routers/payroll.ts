@@ -9,7 +9,7 @@ import {
   payrollQuerySchema,
 } from "@hrms-app/validators";
 import { orchestratePayrollRun, generateMudadFile, mudadToXml, mudadToCsv } from "@hrms-app/payroll";
-import { and, eq, desc } from "drizzle-orm";
+import { and, eq, desc, gte, lte } from "drizzle-orm";
 import type { EmployeeContext, Nationality } from "@hrms-app/payroll";
 import { writeAudit } from "../audit";
 
@@ -27,6 +27,7 @@ function toEmployeeContext(row: typeof schema.tenant.employees.$inferSelect): Em
     salaryHousing: parseNumeric(row.salaryHousing),
     salaryTransport: parseNumeric(row.salaryTransport),
     hireDate: row.hireDate,
+    lastWorkingDay: row.terminationDate,
     employmentStatus: row.employmentStatus,
     bankIbanEnc: row.bankIbanEnc,
     gosiRegistrationDate: row.gosiRegistrationDate,
@@ -80,9 +81,51 @@ export const payrollRouter = createTRPCRouter({
         }
 
         const employeeContexts = activeEmployees.map(toEmployeeContext);
+
+        // ── Attendance → payroll bridge (D6 / ATT-002/ATT-003) ─────────────
+        // Aggregate the period's attendance into overtime pay and absence
+        // deductions per employee, then feed them to the engine.
+        const [yy, mm] = input.periodMonth.split("-").map(Number);
+        const periodStart = `${input.periodMonth}-01`;
+        const lastDay = new Date(Date.UTC(yy ?? 1970, mm ?? 1, 0)).getUTCDate();
+        const periodEnd = `${input.periodMonth}-${String(lastDay).padStart(2, "0")}`;
+
+        const attendance = await ctx.db.query.attendanceRecords.findMany({
+          where: and(
+            gte(schema.tenant.attendanceRecords.workDate, periodStart),
+            lte(schema.tenant.attendanceRecords.workDate, periodEnd),
+          ),
+        });
+
+        const overtime: Record<string, number> = {};
+        const deductions: Record<string, number> = {};
+        const otMinutes: Record<string, number> = {};
+        const absentDays: Record<string, number> = {};
+        for (const rec of attendance) {
+          otMinutes[rec.employeeId] = (otMinutes[rec.employeeId] ?? 0) + (rec.overtimeMinutes ?? 0);
+          if (rec.status === "absent") {
+            absentDays[rec.employeeId] = (absentDays[rec.employeeId] ?? 0) + 1;
+          }
+        }
+        for (const emp of employeeContexts) {
+          const otMin = otMinutes[emp.id] ?? 0;
+          if (otMin > 0) {
+            // Ordinary overtime at 1.5× the basic hourly wage (basic / 208 hrs).
+            overtime[emp.id] = Math.round(((emp.salaryBasic / 208) * 1.5 * (otMin / 60)) * 100) / 100;
+          }
+          const absent = absentDays[emp.id] ?? 0;
+          if (absent > 0) {
+            const dailyWage = (emp.salaryBasic + emp.salaryHousing + emp.salaryTransport) / 30;
+            deductions[emp.id] = Math.round(dailyWage * absent * 100) / 100;
+          }
+        }
+
         const result = orchestratePayrollRun({
           payrollRunId: run.id,
           employees: employeeContexts,
+          overtime,
+          deductions,
+          periodDate: periodStart,
         });
 
         const payslipValues = result.payslips.map((p: any) => ({
