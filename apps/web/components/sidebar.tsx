@@ -22,7 +22,6 @@ import {
   MapPin,
   Settings,
   ShieldCheck,
-  ReceiptText,
   Users,
   WalletCards,
 } from "lucide-react";
@@ -110,10 +109,8 @@ const employeeNavGroups = [
       { href: "/attendance/me", label: "My attendance", labelAr: "حضوري", icon: CalendarCheck },
       { href: "/modules/time-leave-attendance", label: "My leave", labelAr: "إجازاتي", icon: CalendarCheck },
       { href: "/modules/documents-certificates", label: "My documents", labelAr: "مستنداتي", icon: FileText },
-      { href: "/modules/performance-goals", label: "My goals", labelAr: "أهدافي", icon: HeartHandshake },
       { href: "/modules/learning-skills", label: "My learning", labelAr: "تعلمي", icon: BookOpenCheck },
-      { href: "/modules/travel-expenses", label: "My expenses", labelAr: "مصروفاتي", icon: WalletCards },
-      { href: "/expenses", label: "Submit expense", labelAr: "تقديم مصروف", icon: ReceiptText },
+      { href: "/expenses", label: "My expenses", labelAr: "مصروفاتي", icon: WalletCards },
     ],
   },
   {

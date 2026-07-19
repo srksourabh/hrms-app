@@ -141,7 +141,7 @@ export default function ExpensesPage() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Employee lifecycle</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">Expenses & Reimbursements</h1>
+            <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-4xl">{isEmployee ? "My Expenses" : "Expenses & Reimbursements"}</h1>
             <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
               {isEmployee
                 ? "Submit a business expense. Your line manager is automatically assigned as the approver and will see your request in their approvals queue."

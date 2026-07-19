@@ -169,10 +169,10 @@ export default function MyAttendancePage() {
               <div className="flex flex-wrap gap-3 pt-1">
                 <Button
                   size="lg"
-                  disabled={punchedIn || punchInMutation.isPending || !location}
+                  disabled={punchedIn || punchInMutation.isPending}
                   onClick={() =>
                     punchInMutation.mutate({
-                      workLocation: location?.siteName ?? `${location?.lat?.toFixed(4)}, ${location?.lng?.toFixed(4)}`,
+                      workLocation: location?.siteName ?? (location ? `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}` : "On-site"),
                       notes: location ? `lat=${location.lat},lng=${location.lng}${location.accuracy ? `,acc=${Math.round(location.accuracy)}m` : ""}` : undefined,
                     })
                   }
@@ -183,10 +183,10 @@ export default function MyAttendancePage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  disabled={!punchedIn || punchedOut || punchOutMutation.isPending || !location}
+                  disabled={!punchedIn || punchedOut || punchOutMutation.isPending}
                   onClick={() =>
                     punchOutMutation.mutate({
-                      workLocation: location?.siteName ?? latestRecord?.workLocation ?? `${location?.lat?.toFixed(4)}, ${location?.lng?.toFixed(4)}`,
+                      workLocation: location?.siteName ?? latestRecord?.workLocation ?? (location ? `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}` : "On-site"),
                       notes: location ? `lat=${location.lat},lng=${location.lng}${location.accuracy ? `,acc=${Math.round(location.accuracy)}m` : ""}` : undefined,
                     })
                   }

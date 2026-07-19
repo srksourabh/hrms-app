@@ -24,7 +24,7 @@ import {
 import { DashboardShell } from "~/components/dashboard-shell";
 import { EmployeeCommandCenter } from "~/components/demo/employee-command-center";
 import { DashboardProviders } from "~/components/dashboard-providers";
-import { productModules, totalPrdFeatures } from "~/lib/module-catalog";
+import { productModules } from "~/lib/module-catalog";
 
 const featuredSlugs = [
   "people-organization",
@@ -209,18 +209,8 @@ function CommandCenter({ userName, role, dbCounts }: { userName: string; role: A
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs text-slate-500">PRD delivery</p>
-              <p className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-slate-950">{totalPrdFeatures}</p>
-              <p className="mt-1 text-xs text-emerald-700">requirements catalogued</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs text-slate-500">Workspaces</p>
-              <p className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-slate-950">{productModules.length}</p>
-              <p className="mt-1 text-xs text-amber-700">live & in delivery</p>
-            </div>
-            <div className="col-span-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+          <div className="grid grid-cols-1 gap-3">
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-emerald-800">Payroll readiness · June 2026</span>
                 <CheckCircle2 className="h-4 w-4 text-emerald-700" />
