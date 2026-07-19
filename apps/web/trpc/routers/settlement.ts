@@ -2,7 +2,13 @@ import { z } from "zod";
 import { createTRPCRouter, companyProcedure, requireRole } from "../server";
 import { schema } from "@hrms-app/db";
 import { createFinalSettlementSchema } from "@hrms-app/validators";
-import { eq, desc } from "drizzle-orm";
+import { calculateFinalSettlement } from "@hrms-app/payroll";
+import { TRPCError } from "@trpc/server";
+import { and, eq, desc } from "drizzle-orm";
+
+function toNumber(value: string | null | undefined): number {
+  return value ? Number.parseFloat(value) : 0;
+}
 
 const ktItemSchema = z.object({
   task: z.string().min(2),
@@ -84,8 +90,70 @@ export const settlementRouter = createTRPCRouter({
   create: requireRole("super_admin", "hr_manager")
     .input(createFinalSettlementSchema)
     .mutation(async ({ ctx, input }) => {
-      const [settlement] = await ctx.db.insert(schema.tenant.finalSettlements).values(input).returning();
-      return settlement;
+      const employee = await ctx.db.query.employees.findFirst({
+        where: eq(schema.tenant.employees.id, input.employeeId),
+      });
+      if (!employee) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Employee not found." });
+      }
+
+      // ── Article 80 documentation gate (EOSB-010) ──────────────────────────
+      // A dismissal for cause cannot be finalised without the Article 57
+      // investigation document on file for this employee.
+      if (input.separationReason === "termination_for_cause") {
+        if (!input.investigationDocumentId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Article 80 dismissal requires the investigation document to be attached before finalising the settlement.",
+          });
+        }
+        const doc = await ctx.db.query.documents.findFirst({
+          where: and(
+            eq(schema.tenant.documents.id, input.investigationDocumentId),
+            eq(schema.tenant.documents.employeeId, input.employeeId),
+          ),
+        });
+        if (!doc) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "The referenced investigation document was not found for this employee.",
+          });
+        }
+      }
+
+      // ── Compute EOSB from the engine — never trust a client-supplied amount (DOC-003) ──
+      const eosb = calculateFinalSettlement({
+        hireDate: employee.hireDate,
+        terminationDate: input.terminationDate,
+        basicSalary: toNumber(employee.salaryBasic),
+        housingAllowance: toNumber(employee.salaryHousing),
+        transportAllowance: toNumber(employee.salaryTransport),
+        separationReason: input.separationReason,
+        completedProbation: input.completedProbation,
+        fullAwardOverride: input.fullAwardOverride,
+      });
+
+      const [settlement] = await ctx.db
+        .insert(schema.tenant.finalSettlements)
+        .values({
+          employeeId: input.employeeId,
+          esbAmount: eosb.eosbAmount.toString(),
+          unpaidSalary: input.unpaidSalary?.toString(),
+          accruedLeavePayout: input.accruedLeavePayout?.toString(),
+          exitReason: input.exitReason,
+        })
+        .returning();
+
+      return {
+        ...settlement,
+        computed: {
+          eosbAmount: eosb.eosbAmount,
+          resignationFraction: eosb.eosbResignationFraction,
+          yearsOfService: eosb.components.yearsOfService,
+          warnings: eosb.warnings,
+          requiresHrReview: eosb.requiresHrReview,
+        },
+      };
     }),
 
   getByEmployee: companyProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
