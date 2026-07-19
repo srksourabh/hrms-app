@@ -41,14 +41,16 @@ describe("orchestratePayrollRun", () => {
     expect(slip?.deductions).toBe(500);
   });
 
-  it("calculates net pay as gross minus deductions", () => {
+  it("calculates net pay as gross minus GOSI and deductions", () => {
     const result = orchestratePayrollRun({
       payrollRunId: "run-1",
       employees: [emp("e1", { salaryBasic: 10000, salaryHousing: 0, salaryTransport: 0 })],
     });
 
     const slip = result.payslips[0];
-    expect(slip?.netPay).toBeGreaterThan(0);
+    // Gross = 10000. GOSI employee = pension (9% × 10000) + SANED (0.75% × 10000) = 975
+    expect(slip?.gosiEmployee).toBeGreaterThan(0);
+    expect(slip?.netPay).toBe(10000 - (slip?.gosiEmployee ?? 0));
   });
 
   it("returns empty payslips for no employees", () => {

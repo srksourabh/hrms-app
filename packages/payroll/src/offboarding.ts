@@ -160,28 +160,32 @@ export class TerminationWorkflow {
   // ─── Notice Period ─────────────────────────────────────────────────────────
 
   /**
-   * Article 55 (indefinite contract): minimum 30 days notice from employer.
-   * Article 56 (definite/fixed-term contract): notice or salary in lieu.
-   * Saudi custom: 30 days is standard; 60–90 days for senior executives.
+   * Article 75 (as amended Feb 2025) — asymmetric notice for indefinite contracts:
+   *   - Employee resigns: 30 days' notice
+   *   - Employer terminates: 60 days' notice
+   *
+   * Article 56 (definite/fixed-term): notice or salary in lieu.
    *
    * During the notice period the employee is entitled to:
    *  - Full salary and benefits
-   *  - 1 day per week (or 4 hours per week) off to search for new employment (definite contract)
+   *  - 4 hours per week (or 1 day per week) off to search for new employment
    *  - Employer may place employee on garden leave (unworked notice period)
    */
   computeNotice(): NoticePeriod {
-    const { contractType, reason } = this.initiation;
+    const { contractType, reason, initiator } = this.initiation;
 
-    // Standard notice period in days
-    const baseDays = contractType === "definite" ? 30 : 30;
+    // Asymmetric notice: 30 days (employee) / 60 days (employer) for indefinite
+    // Definite-term: 30 days standard
+    let baseDays: number;
+    if (contractType === "definite") {
+      baseDays = 30;
+    } else {
+      baseDays = initiator === "employee" ? 30 : 60;
+    }
 
-    // For employer-initiated indefinite: 30 days minimum (Article 55)
-    // For employee resignation: 30 days minimum
-    // For definite-term: salary in lieu permitted
+    const gardenLeave = initiator === "employer";
 
-    const gardenLeave = this.initiation.initiator === "employer";
-
-    // Job-search entitlement: definite-term contract employees get time off to find work
+    // Job-search entitlement: 4 hours per week (definite-term)
     const jobSearchHours = contractType === "definite" ? 4 : 0;
 
     // Salary in lieu for definite-term contracts

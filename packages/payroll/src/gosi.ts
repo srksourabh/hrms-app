@@ -2,21 +2,25 @@
  * Saudi General Organization for Social Insurance (GOSI) Calculation Engine
  *
  * Legal basis:
- * - GOSI Law (Royal Decree M/33) and Executive Regulations
+ * - GOSI Law (Royal Decree M/33, M/273) and Executive Regulations
  * - SANED (Saudi National Unemployment Insurance) — separate branch
  * - Occupational Hazards branch — covers all workers including expatriates
  *
  * ⚠️  INTERNAL CALCULATION ENGINE — NOT AN OFFICIAL GOSI STATEMENT
- *    This implements the statutory rate structure for payroll calculation.
- *    Actual GOSI invoices must be obtained directly from the GOSI portal
- *    or official API. Output is for payroll ledger purposes only.
+ *    Actual GOSI invoices MUST be reconciled against the official GOSI portal
+ *    each pay period. These are approximate ledger rates; the GOSI portal
+ *    is the authoritative source. Output is for payroll ledger purposes only.
  *
- * Rate sources (verified against GOSI published schedules):
- * - Pre-Jul 2024 Saudi (old system): 9% employee / 10% employer + 2% SANED + 0.75% occ.hazards
- * - Post-Jul 2024 Saudi (new system): 11% employee / 11% employer + 2% SANED + 0.75% occ.hazards
- *   Escalation schedule: Jul 2025 +0.5% each side, Jul 2026 +0.5% each side
- * - GCC nationals: GOSI reciprocity agreement — 0% to Saudi GOSI
- * - Non-Saudi/non-GCC expatriates: Occupational hazards only — 2% employer, 0% employee
+ * 2026 rate structure (two parallel systems keyed by first-registration date):
+ *
+ * | System         | Employee         | Employer          | Combined |
+ * |----------------|------------------|-------------------|----------|
+ * | Existing       | ~9.75%           | ~11.75%           | ~21.5%   |
+ * | New (M/273)    | ~10.75% (Jul 26) | ~12.75% (Jul 26)  | ~23.5%   |
+ * | Non-Saudi      | 0%               | 2% (occ.haz only) | 2%       |
+ *
+ * New-system pension rates rise 0.5%/side/yr every July through 2028.
+ * SANED is 0.75% each side as of 2026 (was 1%+1% pre-2024).
  *
  * Contributory base: basic_salary + housing_allowance (capped at 45,000 SAR/month)
  * Transport, bonuses, allowances ARE NOT included in the GOSI base.
@@ -29,14 +33,15 @@ import type { GosiResult } from "./types";
 const GOSI_MONTHLY_CAP = 45_000;
 
 /** SANED — Saudi National Unemployment Insurance (separate branch from GOSI pension) */
-const SANED_EMPLOYER_RATE = 0.02; // 2% of pension-contributory base, employer only
+const SANED_EMPLOYEE_RATE = 0.0075; // 0.75% of contributory base, employee-side (was 1% pre-2024)
+const SANED_EMPLOYER_RATE = 0.0075; // 0.75%, employer-side (was 1% pre-2024)
 
 /**
  * Occupational Hazards Insurance — covers ALL workers including expatriates.
  * Royal Decree for occupational hazards coverage expansion (2021).
  * Rate varies by industry risk class; 2% is the standard office/light-industry rate.
  */
-const OCCUPATIONAL_HAZARDS_EMPLOYER_RATE = 0.02; // 2%, employer only
+const OCCUPATIONAL_HAZARDS_EMPLOYER_RATE = 0.02; // 2%, employer only — ALL nationalities
 
 // ─── GOSI Pension Rate Tables ─────────────────────────────────────────────────
 
@@ -48,20 +53,21 @@ interface GosiRateSet {
 }
 
 const GOSI_OLD: GosiRateSet = {
-  employee: 0.09,   // 9%
-  employer:  0.10,   // 10%
+  employee: 0.09,   // 9% pension
+  employer:  0.10,  // 10% pension
   escalationYear: 0,
 };
 
+// New system (M/273): pension starts at 9.5% each side (Jul 2024),
+// rising 0.5%/side/yr through Jul 2028.
+// Total employee = pension + SANED_employee (0.75%)
+// Total employer = pension + SANED_employer (0.75%) + occ.haz (2%)
 function getGosiNewRates(escalationYears = 0): GosiRateSet {
-  // New-system rates escalate 0.5% per side each July starting Jul 2024
-  // Jul 2024 (year 0): employee 11%, employer 11%
-  // Jul 2025 (year 1): employee 11.5%, employer 11.5%
-  // Jul 2026 (year 2): employee 12%, employer 12%
+  const basePension = 0.095; // 9.5% — Jul 2024 starting rate
   const increment = escalationYears * 0.005;
   return {
-    employee:    0.11 + increment, // 11% → 11.5% → 12%
-    employer:    0.11 + increment, // 11% → 11.5% → 12%
+    employee:    basePension + increment,
+    employer:    basePension + increment,
     escalationYear: escalationYears,
   };
 }
@@ -108,11 +114,11 @@ function resolveGosiRates(input: GosiInput): GosiRateSet | null {
   if (regDate < cutoff) return GOSI_OLD;
 
   // New system — determine escalation year from effective date or today
+  // Escalation happens every July 1st. Count how many Jul 1sts have passed.
   const effective = input.effectiveDate ? new Date(input.effectiveDate) : new Date();
-  const yearsSinceStart = Math.floor(
-    (effective.getTime() - cutoff.getTime()) / (1000 * 60 * 60 * 24 * 365.25)
-  );
-  const cappedYears = Math.min(Math.max(yearsSinceStart, 0), 4); // cap at 4 to be safe
+  const yearsSinceStart = (effective.getFullYear() - cutoff.getFullYear())
+    + (effective.getMonth() >= 6 ? 0 : -1); // before July = not yet escalated for current year
+  const cappedYears = Math.min(Math.max(yearsSinceStart, 0), 4);
   return getGosiNewRates(cappedYears);
 }
 
@@ -123,8 +129,8 @@ function resolveGosiRates(input: GosiInput): GosiRateSet | null {
  *
  * Three separate insurance branches:
  *  1. GOSI Pension      — Saudi employees only (old or new rate)
- *  2. Occupational Haz  — All workers including expatriates (2% employer)
- *  3. SANED             — Saudi employees only (1% employer)
+ *  2. Occupational Haz  — ALL workers including expatriates (2% employer)
+ *  3. SANED             — Saudi employees only (0.75% each side)
  *
  * @example
  * const result = calculateGosi({
@@ -134,31 +140,25 @@ function resolveGosiRates(input: GosiInput): GosiRateSet | null {
  *   salaryHousing: 3000,
  *   effectiveDate: "2026-07-01",
  * });
- * // result.pension           = { employee: 1170, employer: 1300 }
- * // result.occupationalHaz   = { employee: 0,   employer: 260  }
- * // result.saned             = { employee: 0,   employer: 130  }
- * // result.totalEmployerCost = 1690
- * // result.totalEmployeeCost = 1170
+ * // Existing system: pension 9%/10%, SANED 0.75% each, occ.haz 2% employer
+ * //   employee = 9%×13000 + 0.75%×13000 = 1,170 + 98 = 1,268
+ * //   employer = 10%×13000 + 0.75%×13000 + 2%×13000 = 1,300 + 98 + 260 = 1,658
  */
 export function calculateGosi(input: GosiInput): GosiResult {
   const base = Math.min(input.salaryBasic + input.salaryHousing, GOSI_MONTHLY_CAP);
 
   // 1. Occupational hazards — ALL workers (rate: 2% employer, 0% employee)
-  const occHaz = r(
-    input.nationality === "expat" || input.nationality === "gcc"
-      ? base * OCCUPATIONAL_HAZARDS_EMPLOYER_RATE // employer 2%, employee 0
-      : 0
-  );
+  const occHazEmployer = r(base * OCCUPATIONAL_HAZARDS_EMPLOYER_RATE);
 
-  // 2. GOSI Pension — Saudi only
+  // 2. GOSI Pension — Saudi/GCC only (null for expat)
   const pension = resolveGosiRates(input);
   const pensionEmployee = pension ? r(base * pension.employee) : 0;
   const pensionEmployer = pension ? r(base * pension.employer)  : 0;
 
-  // 3. SANED — Saudi employees only (1% of pension base, employer only)
-  const sanedEmployer = (input.nationality === "saudi")
-    ? r(base * SANED_EMPLOYER_RATE)
-    : 0;
+  // 3. SANED — Saudi employees only (0.75% each side)
+  const isSaudi = input.nationality === "saudi";
+  const sanedEmployee = isSaudi ? r(base * SANED_EMPLOYEE_RATE) : 0;
+  const sanedEmployer = isSaudi ? r(base * SANED_EMPLOYER_RATE) : 0;
 
   return {
     pension: {
@@ -169,18 +169,18 @@ export function calculateGosi(input: GosiInput): GosiResult {
     },
     occupationalHazards: {
       employee: 0,
-      employer: occHaz,
+      employer: occHazEmployer,
       rateEmployee: 0,
       rateEmployer: OCCUPATIONAL_HAZARDS_EMPLOYER_RATE,
     },
     saned: {
-      employee: 0,
+      employee: sanedEmployee,
       employer: sanedEmployer,
-      rateEmployee: 0,
+      rateEmployee: SANED_EMPLOYEE_RATE,
       rateEmployer: SANED_EMPLOYER_RATE,
     },
-    totalEmployeeCost: pensionEmployee,
-    totalEmployerCost: occHaz + pensionEmployer + sanedEmployer,
+    totalEmployeeCost: pensionEmployee + sanedEmployee,
+    totalEmployerCost: occHazEmployer + pensionEmployer + sanedEmployer,
     contributoryBase: base,
     nationality: input.nationality,
   };

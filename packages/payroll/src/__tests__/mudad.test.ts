@@ -36,7 +36,7 @@ describe("generateMudadFile", () => {
       employees: [emp],
     });
 
-    expect(result.format).toBe("mudad");
+    expect(result.format).toBe("mudad-wps-demo");
     expect(result.period).toBe("2026-07");
     expect(result.totalEmployees).toBe(1);
     expect(result.totalWages).toBe(13500);
@@ -50,7 +50,7 @@ describe("mudadToXml", () => {
     const xml = mudadToXml(file);
 
     expect(xml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
-    expect(xml).toContain("<wageFile format=\"mudad\">");
+    expect(xml).toContain("<wageFile format=\"mudad-wps-demo\">");
     expect(xml).toContain("<period>2026-07</period>");
     expect(xml).toContain("<fullName>Ahmed Al-Saud</fullName>");
     expect(xml).toContain("</wageFile>");
@@ -62,7 +62,7 @@ describe("mudadToCsv", () => {
     const file = generateMudadFile({ periodMonth: "2026-07", payslips: [slip], employees: [emp] });
     const csv = mudadToCsv(file);
 
-    expect(csv).toContain("employeeId,fullName,basic,housing,transport,overtime,grossWage,gosiEmployee,gosiEmployer,netPay");
+    expect(csv).toContain("employeeId,fullName,iqamaNumber");
     expect(csv).toContain("Ahmed Al-Saud");
   });
 });

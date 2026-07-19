@@ -62,7 +62,7 @@ export interface SickLeaveEntitlement {
 }
 
 export interface MaternityLeaveEntitlement {
-  /** Weeks of maternity leave */
+  /** Weeks of maternity leave (12 weeks from Feb 2025 amendments) */
   weeks: number;
   /** % of salary covered (0.0 = unpaid, 1.0 = full pay) */
   paidPortion: number;
@@ -72,6 +72,13 @@ export interface MaternityLeaveEntitlement {
   nursingBreakMinutes: number;
   /** Weeks of nursing break entitlement after return */
   nursingWeeks: number;
+}
+
+export interface PaternityLeaveEntitlement {
+  /** Days of paternity leave (3 days from Feb 2025 amendments) */
+  days: number;
+  /** Whether it is paid */
+  paid: boolean;
 }
 
 export interface WorkingTimeConfig {
@@ -140,9 +147,11 @@ export interface RegulatoryConfig {
     annual: LeaveEntitlement;
     sick: SickLeaveEntitlement;
     maternity: MaternityLeaveEntitlement;
+    /** Paternity — 3 days (Feb 2025 amendments) */
+    paternity: PaternityLeaveEntitlement;
     /** Hajj leave — 10 days paid for Muslim pilgrimage */
     hajj: { days: number; paid: boolean; serviceRequiredMonths: number };
-    /** Bereavement — immediate family */
+    /** Bereavement — immediate family (3 days from Feb 2025 amendments) */
     bereavement: { days: number; paid: boolean };
     /** Marriage — employee own marriage */
     marriage: { days: number; paid: boolean };
@@ -180,9 +189,10 @@ const SAUDI_BASELINE_CONFIGS: RegulatoryConfig[] = [
     leave: {
       annual: { annualDays: 21, saudiAdditionalDays: 9, carryOverMaxDays: 0, accrualCeilingDays: 0, encashmentAllowed: true },
       sick: { fullPayDays: 30, halfPayDays: 60, unpaidDays: 30 },
-      maternity: { weeks: 10, paidPortion: 1.0, serviceRequired: false, nursingBreakMinutes: 60, nursingWeeks: 4 },
+      maternity: { weeks: 12, paidPortion: 1.0, serviceRequired: false, nursingBreakMinutes: 60, nursingWeeks: 4 },
       hajj: { days: 10, paid: true, serviceRequiredMonths: 12 },
-      bereavement: { days: 5, paid: true },
+      bereavement: { days: 3, paid: true },
+      paternity: { days: 3, paid: true },
       marriage: { days: 3, paid: true },
       exam: { daysPerYear: 5, paid: true },
       unpaidExceptional: { maxDaysPerYear: 60 },
@@ -223,7 +233,7 @@ const SAUDI_BASELINE_CONFIGS: RegulatoryConfig[] = [
         { minYears: 5,  fraction: 2/3 },
         { minYears: 10, fraction: 1 },
       ],
-      probationDays: 60,
+      probationDays: 180,
     },
   },
 ];

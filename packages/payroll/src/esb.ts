@@ -2,7 +2,7 @@
  * End-of-Service Benefit (EOSB) / Final Settlement Calculation Engine
  *
  * Legal basis: Saudi Labour Law Articles 84, 85, 86, 87, 88, 89, and 90;
- * Executive Regulations Part 7; GOSI EOSB rules for registered employees.
+ * Executive Regulations Part 7; 2025 amendments.
  *
  * ⚠️  INTERNAL CALCULATION ENGINE
  *    Final settlement amounts must be reviewed by HR and validated against
@@ -10,28 +10,29 @@
  *    baseline; actual payments may be subject to court orders, settlement
  *    agreements, or contractual terms that override the default formula.
  *
- * Saudi Labour Law EOSB Summary:
+ * Saudi Labour Law EOSB Summary (corrected 2026):
  * ┌──────────────────────────────────────────────────────────────┐
  * │ Termination by employer (not for cause):                    │
- * │   < 2 years  → 0                                            │
- * │   2-5 years  → half-month salary × years                   │
- * │   5-10 years → two-thirds-month salary × years              │
- * │   > 10 years → full-month salary × years                    │
+ * │   EOSB = (0.5 × wage × first 5 yr) + (1.0 × wage × after)  │
+ * │   Example: 7 yr @ 17,000 = 42,500 + 34,000 = 76,500        │
  * ├──────────────────────────────────────────────────────────────┤
- * │ Resignation by employee:                                    │
- * │   < 2 years  → 0                                            │
- * │   2-5 years  → 1/3 of EOSB (half/whole × years × fraction) │
- * │   5-10 years → 2/3 of EOSB                                  │
- * │   > 10 years → full EOSB                                    │
+ * │ Resignation by employee (Article 85):                       │
+ * │   < 2 years  → 0% of full EOSB                              │
+ * │   2-5 years  → 33.3% of full EOSB                           │
+ * │   5-10 years → 66.7% of full EOSB                           │
+ * │   10+ years  → 100% of full EOSB                            │
  * ├──────────────────────────────────────────────────────────────┤
- * │ Exceptions with NO EOSB (Article 84):                        │
- * │   - Employee resigns before completing probation (60 days)   │
- * │   - Employee terminates contract without notice (Art. 77/78) │
- * │   - Employee dismissed for cause under Article 80             │
+ * │ Full award overrides:                                        │
+ * │   Art 87 — marriage (<6 mo), childbirth (<3 mo), force majeure│
+ * │   Art 81 — employer-fault termination                        │
+ * ├──────────────────────────────────────────────────────────────┤
+ * │ Zero EOSB:                                                    │
+ * │   Art 80 — dismissal for cause (requires documented evidence) │
+ * │   Resignation before completing probation                    │
  * └──────────────────────────────────────────────────────────────┘
  *
- * Monthly salary = basic + housing + transport
- * Half-month salary = (basic + housing + transport) / 2
+ * Monthly salary (Actual Wage) = basic + housing + transport
+ * Half-month salary = Actual Wage / 2
  */
 
 import type {
@@ -48,17 +49,6 @@ const DAYS_PER_MONTH_APPROX = 30;
 const DAYS_PER_YEAR_APPROX  = 365.25;
 
 /**
- * Saudi Labour Law — EOSB fractions by tenure bracket.
- * Key: minimum completed years of service.
- */
-const EOSB_TENURE_TABLE: { minYears: number; fraction: number }[] = [
-  { minYears: 10, fraction: 1.0 },   // 10+ years → full monthly salary
-  { minYears: 5,  fraction: 2 / 3 }, // 5-9 years → two-thirds
-  { minYears: 2,  fraction: 1 / 3 }, // 2-4 years → one-third
-  { minYears: 0,  fraction: 0    },  // < 2 years → zero
-];
-
-/**
  * Resignation penalty fractions (applied to the full termination EOSB amount).
  * Key: minimum completed years of service.
  */
@@ -73,7 +63,7 @@ const RESIGNATION_PENALTY_TABLE: { minYears: number; fraction: number }[] = [
 
 export function calculateFinalSettlement(input: FinalSettlementInput): FinalSettlementResult {
   const { hireDate, terminationDate, basicSalary, housingAllowance, transportAllowance,
-    separationReason, completedProbation } = input;
+    separationReason, completedProbation, fullAwardOverride } = input;
 
   const totalMonthlySalary = basicSalary + housingAllowance + transportAllowance;
   const halfMonthSalary   = totalMonthlySalary / 2;
@@ -86,7 +76,6 @@ export function calculateFinalSettlement(input: FinalSettlementInput): FinalSett
 
   // ── Article 84 bar conditions ────────────────────────────────────────
   if (separationReason === "resignation" && !completedProbation) {
-    // Resigning before completing 60-day probation → zero EOSB (Labour Law Art. 84)
     warnings.push("Employee resigned before completing probation — EOSB is legally zero under Article 84.");
     return {
       eosbAmount: 0,
@@ -105,9 +94,6 @@ export function calculateFinalSettlement(input: FinalSettlementInput): FinalSett
 
   // ── Termination for cause (Article 80) ────────────────────────────────
   if (separationReason === "termination") {
-    // Article 80 dismissal for cause — EOSB is ZERO regardless of tenure
-    // (willful misconduct, violation of contract, criminal conduct, etc.)
-    // Requires documented investigation evidence.
     warnings.push(
       "Termination for cause claimed — EOSB is zero under Article 80 only if " +
       "a formal investigation (Article 57) has been completed. " +
@@ -129,14 +115,18 @@ export function calculateFinalSettlement(input: FinalSettlementInput): FinalSett
     };
   }
 
-  // ── Force majeure, death, mutual termination ──────────────────────────
-  if (
+  // ── Compute full EOSB using the linear formula ──────────────────────────
+  // Article 84: EOSB = 0.5 × wage × first 5 yr + 1.0 × wage × every yr after 5
+  const fullEosb = computeFullEosb(years, totalMonthlySalary, halfMonthSalary, warnings);
+
+  // ── Full award overrides (Art 87, Art 81, force majeure, death) ─────────
+  const isFullAward =
+    fullAwardOverride ||
     separationReason === "force_majeure" ||
     separationReason === "death" ||
-    separationReason === "mutual_termination"
-  ) {
-    // Special cases — full EOSB regardless of reason
-    const fullEosb = applyTenureBracket(years, halfMonthSalary, warnings);
+    separationReason === "employer_fault";
+
+  if (isFullAward) {
     return {
       eosbAmount:              fullEosb,
       eosbResignationFraction: 1,
@@ -155,7 +145,6 @@ export function calculateFinalSettlement(input: FinalSettlementInput): FinalSett
   // ── Resignation (employee-initiated) ─────────────────────────────────
   if (separationReason === "resignation") {
     const resignationFraction = lookupFraction(years, RESIGNATION_PENALTY_TABLE);
-    const fullEosb           = applyTenureBracket(years, halfMonthSalary, warnings);
 
     if (resignationFraction === 0) {
       warnings.push("Employee has less than 2 years of service — resignation EOSB is zero.");
@@ -177,8 +166,7 @@ export function calculateFinalSettlement(input: FinalSettlementInput): FinalSett
     const payableEosb = round(fullEosb * resignationFraction, 2);
     warnings.push(
       `Resignation: ${resignationFraction < 1 ? `only ${Math.round(resignationFraction * 100)}%` : "100%"} ` +
-      `of the full EOSB is payable (${years < 2 ? "0" : years < 5 ? "1/3" : years < 10 ? "2/3" : "full"} ` +
-      `for ${round(years, 1)} years of service).`
+      `of the full EOSB is payable for ${round(years, 1)} years of service.`
     );
     if (years < 5) requiresHrReview = true;
 
@@ -198,28 +186,23 @@ export function calculateFinalSettlement(input: FinalSettlementInput): FinalSett
   }
 
   // ── End of contract / termination by employer ─────────────────────────
-  if (separationReason === "end_of_contract" || separationReason === "termination") {
-    const eosbFraction = lookupFraction(years, EOSB_TENURE_TABLE);
-    const eosbAmount   = round(halfMonthSalary * eosbFraction * years, 2);
-
+  if (separationReason === "end_of_contract" || separationReason === "mutual_termination") {
     if (days > 0 && days < 30) {
       warnings.push(
-        `Partial month: ${days} additional days (${round(days / DAYS_PER_MONTH_APPROX * 30, 0)} days ` +
-        `≈ ${round(days / DAYS_PER_MONTH_APPROX, 2)} months) are not counted in whole-year EOSB. ` +
-        `Confirm whether the partial period should be included per the contract.`
+        `Partial month: ${days} additional days — confirm whether the partial period should be included per the contract.`
       );
       requiresHrReview = true;
     }
 
     return {
-      eosbAmount:              eosbAmount,
+      eosbAmount:              fullEosb,
       eosbResignationFraction: 1,
       components: {
         yearsOfService:       round(years, 3),
         dailyWage:            round(totalMonthlySalary / DAYS_PER_MONTH_APPROX, 2),
         halfSalaryPerYear:    halfMonthSalary,
         totalYearsCalculated: round(years, 3),
-        eosbFraction:        eosbFraction,
+        eosbFraction:        1,
       },
       warnings,
       requiresHrReview,
@@ -245,14 +228,29 @@ export function calculateFinalSettlement(input: FinalSettlementInput): FinalSett
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function applyTenureBracket(
+/**
+ * Compute full EOSB using the correct Saudi Labour Law linear formula:
+ *   - First 5 years: 0.5 × wage per year (half-month)
+ *   - After 5 years: 1.0 × wage per year (full-month)
+ *   - Partial years: proportional
+ *
+ * This replaces the old bracket-fraction approach which was incorrect.
+ */
+function computeFullEosb(
   years: number,
+  monthlyWage: number,
   halfMonthSalary: number,
   warnings: string[]
 ): number {
-  const fraction = lookupFraction(years, EOSB_TENURE_TABLE);
-  const amount   = round(halfMonthSalary * fraction * years, 2);
-  if (years < 2) warnings.push("Service period under 2 years — EOSB is zero.");
+  if (years < 2) {
+    warnings.push("Service period under 2 years — EOSB is zero.");
+    return 0;
+  }
+
+  const firstFive   = Math.min(years, 5);
+  const afterFive   = Math.max(0, years - 5);
+  const amount      = round(halfMonthSalary * firstFive + monthlyWage * afterFive, 2);
+
   if (years >= 10) warnings.push("Service period 10+ years — full EOSB applies.");
   return amount;
 }

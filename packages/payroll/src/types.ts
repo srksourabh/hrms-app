@@ -145,7 +145,8 @@ export type SeparationReason =
   | "end_of_contract"
   | "mutual_termination"
   | "force_majeure"
-  | "death";
+  | "death"
+  | "employer_fault"; // Article 81 — employer breach; full EOSB + no notice
 
 /** Saudi Labour Law EOSB eligibility and calculation inputs */
 export interface FinalSettlementInput {
@@ -157,6 +158,15 @@ export interface FinalSettlementInput {
   separationReason:   SeparationReason;
   /** Whether the employee completed the probation period */
   completedProbation: boolean;
+  /**
+   * Full-award override (Article 87 / Article 81).
+   * Set true when the employee qualifies for full EOSB regardless of resignation tier:
+   *   - Female resigning within 6 months of marriage
+   *   - Female resigning within 3 months of childbirth
+   *   - Force majeure
+   *   - Employer-fault termination (Article 81)
+   */
+  fullAwardOverride?: boolean;
 }
 
 export interface FinalSettlementResult {
