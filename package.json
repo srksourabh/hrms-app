@@ -8,6 +8,7 @@
     "typecheck": "turbo typecheck",
     "test": "vitest",
     "test:e2e": "pnpm --filter @hrms-app/web exec playwright test --config=../../playwright.config.ts",
+    "arch:review": "node scripts/architecture-review-agent.mjs",
     "db:push": "pnpm -F @hrms-app/db db:push",
     "db:generate": "pnpm -F @hrms-app/db db:generate",
     "db:migrate": "pnpm -F @hrms-app/db db:migrate",

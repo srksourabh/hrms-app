@@ -41,7 +41,7 @@ function hotp(key: Buffer, counter: number): string {
   buf.writeUInt32BE(Math.floor(counter / 2 ** 32), 0);
   buf.writeUInt32BE(counter >>> 0, 4);
   const digest = createHmac("sha1", key).update(buf).digest();
-  const offset = digest[digest.length - 1]! & 0xf;
+  const offset = (digest[digest.length - 1] ?? 0) & 0xf;
   const binary = digest.readUInt32BE(offset) & 0x7fffffff;
   return (binary % 10 ** DIGITS).toString().padStart(DIGITS, "0");
 }

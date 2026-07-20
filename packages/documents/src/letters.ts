@@ -141,7 +141,7 @@ export function generateFinalSettlementStatement(
   ];
 
   const bodyEn = `
-    <p>Final settlement for <strong>${esc(e.fullName)}</strong>, last working day ${esc(lastDay)}.</p>
+    <p>Final settlement for <strong>${esc(e.fullName)}</strong> by <strong>${esc(company.nameEn)}</strong>, last working day ${esc(lastDay)}.</p>
     <table>${lines.map((l) => l.en).join("")}
       <tr class="total"><td>Net payable</td><td>${sar(netPayable)}</td></tr>
     </table>`;

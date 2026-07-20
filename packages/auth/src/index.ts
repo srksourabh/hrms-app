@@ -17,7 +17,7 @@ async function getLockState(userId: string): Promise<{ attempts: number; lockedU
   try {
     const rows = (await adminDb.execute(
       sql`SELECT failed_login_attempts AS attempts, locked_until AS locked_until FROM users WHERE id = ${userId}`,
-    )) as unknown as Array<{ attempts: number | null; locked_until: string | Date | null }>;
+    )) as unknown as { attempts: number | null; locked_until: string | Date | null }[];
     const row = rows?.[0];
     if (!row) return null;
     return {
