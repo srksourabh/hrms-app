@@ -56,7 +56,7 @@ into `createTenantSchema`, parity test 5/5). Regenerate: `pnpm --filter
 - [x] API-010 ai.chat no longer forwards client model string
 - [x] RBAC-007 referral.create no longer trusts client referrer; application.create constrained by schema
 - [x] RBAC-008 ai.assistant list/getById → requireCapability(settings:manage)
-- [ ] PRIV-010 salary cert/experience letter unaudited PII exposure
+- [x] PRIV-010 salary cert/experience letter generation now audited
 - [ ] PRIV-011 audit log omits auth/role/export/PII-view events
 - [def] PRIV-001 CSP script-src 'unsafe-inline' — needs nonce-based CSP (Next hydration would break); real project, not a safe pre-demo fix
 - [def] AUTH-003 no absolute session lifetime / stale role in JWT — session model change

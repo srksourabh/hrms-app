@@ -7,6 +7,7 @@ import { checkDocumentExpiry, EXPIRY_THRESHOLDS, generateSalaryCertificate, gene
 import type { ExpiryThreshold } from "@hrms-app/documents";
 import { TRPCError } from "@trpc/server";
 import { tenants } from "@hrms-app/db";
+import { writeAudit } from "../audit";
 
 function toDocumentContext(row: typeof schema.tenant.documents.$inferSelect & { employee: { fullName: string } }) {
   return {
@@ -68,6 +69,16 @@ export const documentRouter = createTRPCRouter({
         input.type === "salary_certificate"
           ? generateSalaryCertificate(company, e)
           : generateExperienceLetter(company, e, employee.terminationDate ?? new Date().toISOString().slice(0, 10));
+
+      // PRIV-010: this letter embeds the decrypted national ID and full salary,
+      // so record who generated it for which employee (PII access trail).
+      await writeAudit(ctx, {
+        action: "document.generateLetter",
+        entityType: "employee",
+        entityId: input.employeeId,
+        newValue: { letterType: input.type },
+      });
+
       return { html, type: input.type };
     }),
 
