@@ -5,7 +5,6 @@ import { TRPCError } from "@trpc/server";
 import {
   createPayrollRunSchema,
   updatePayrollRunSchema,
-  createPayslipSchema,
   payrollQuerySchema,
 } from "@hrms-app/validators";
 import { orchestratePayrollRun, generateMudadFile, mudadToXml, mudadToCsv } from "@hrms-app/payroll";
@@ -214,23 +213,33 @@ export const payrollRouter = createTRPCRouter({
     updateStatus: requireRole("super_admin", "hr_manager")
       .input(z.object({ id: z.string().uuid(), data: updatePayrollRunSchema }))
       .mutation(async ({ ctx, input }) => {
-        // ── Reopen guard (PAY-011): a completed period is locked ──────────
-        // The generic status change must not silently reopen a completed
-        // run; that requires the audited `reopen` workflow below.
         const current = await ctx.db.query.payrollRuns.findFirst({
           where: eq(schema.tenant.payrollRuns.id, input.id),
         });
         if (!current) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Payroll run not found." });
         }
-        if (
-          current.status === "completed" &&
-          input.data.status !== "completed" &&
-          input.data.status !== "cancelled"
-        ) {
+
+        const next = input.data.status;
+        // ── BIZ-009: forward-only state machine ──────────────────────────
+        // A completed period is locked (reopen only via the audited workflow
+        // below), status may not skip stages (e.g. draft → completed), and the
+        // un-audited completed → cancelled shortcut is closed.
+        const ALLOWED: Record<string, readonly string[]> = {
+          draft: ["pre_check", "cancelled"],
+          pre_check: ["ready", "draft", "cancelled"],
+          ready: ["completed", "pre_check", "cancelled"],
+          completed: [],
+          cancelled: [],
+        };
+        if (next !== current.status && !(ALLOWED[current.status] ?? []).includes(next)) {
+          const hint =
+            current.status === "completed"
+              ? " Use the reopen workflow (with a reason) to change a completed period."
+              : "";
           throw new TRPCError({
             code: "FORBIDDEN",
-            message: "A completed payroll period is locked. Use the reopen workflow (with a reason) to change it.",
+            message: `Cannot move a payroll run from ${current.status} to ${next}.${hint}`,
           });
         }
 
@@ -239,6 +248,16 @@ export const payrollRouter = createTRPCRouter({
           .set(input.data)
           .where(eq(schema.tenant.payrollRuns.id, input.id))
           .returning();
+
+        if (next !== current.status) {
+          await writeAudit(ctx, {
+            action: "payroll.status_change",
+            entityType: "payroll_run",
+            entityId: input.id,
+            oldValue: { status: current.status },
+            newValue: { status: next },
+          });
+        }
         return run;
       }),
 
@@ -318,6 +337,9 @@ export const payrollRouter = createTRPCRouter({
       });
     }),
 
+    // BIZ-010: the manual payslip.create endpoint (arbitrary net-pay injection
+    // bypassing the calculation engine and audit) was removed. Payslips are
+    // produced only by payrollRuns.create via orchestratePayrollRun().
     getById: requireRole(...PAYROLL_VIEW_ROLES).input(z.string().uuid()).query(async ({ ctx, input }) => {
       return await ctx.db.query.payslips.findFirst({
         where: eq(schema.tenant.payslips.id, input),
@@ -325,12 +347,6 @@ export const payrollRouter = createTRPCRouter({
       });
     }),
 
-    create: requireRole("super_admin", "hr_manager")
-      .input(z.array(createPayslipSchema))
-      .mutation(async ({ ctx, input }) => {
-        const payslips = await ctx.db.insert(schema.tenant.payslips).values(input).returning();
-        return payslips;
-      }),
   }),
 
   compliance: createTRPCRouter({
