@@ -385,29 +385,36 @@ export const leaveRouter = createTRPCRouter({
               config
             );
 
-        for (const result of results) {
-          if (result.daysAccrued === 0) continue;
-
-          if (result.created) {
-            await ctx.db.insert(schema.tenant.leaveBalances).values({
-              employeeId: result.employeeId,
-              leaveTypeId: result.leaveTypeId,
-              balance: result.newBalance.toString(),
-              year: result.year,
-            });
-          } else {
-            await ctx.db
-              .update(schema.tenant.leaveBalances)
-              .set({ balance: result.newBalance.toString() })
-              .where(
-                and(
-                  eq(schema.tenant.leaveBalances.employeeId, result.employeeId),
-                  eq(schema.tenant.leaveBalances.leaveTypeId, result.leaveTypeId),
-                  eq(schema.tenant.leaveBalances.year, result.year)
-                )
-              );
-          }
+        // QA-003: one bulk insert for brand-new balances + concurrent updates,
+        // instead of a sequential DB round-trip per employee×leaveType.
+        const changed = results.filter((r) => r.daysAccrued !== 0);
+        const toInsert = changed
+          .filter((r) => r.created)
+          .map((r) => ({
+            employeeId: r.employeeId,
+            leaveTypeId: r.leaveTypeId,
+            balance: r.newBalance.toString(),
+            year: r.year,
+          }));
+        if (toInsert.length > 0) {
+          await ctx.db.insert(schema.tenant.leaveBalances).values(toInsert);
         }
+        await Promise.all(
+          changed
+            .filter((r) => !r.created)
+            .map((r) =>
+              ctx.db
+                .update(schema.tenant.leaveBalances)
+                .set({ balance: r.newBalance.toString() })
+                .where(
+                  and(
+                    eq(schema.tenant.leaveBalances.employeeId, r.employeeId),
+                    eq(schema.tenant.leaveBalances.leaveTypeId, r.leaveTypeId),
+                    eq(schema.tenant.leaveBalances.year, r.year)
+                  )
+                )
+            )
+        );
 
         return {
           processed: results.length,

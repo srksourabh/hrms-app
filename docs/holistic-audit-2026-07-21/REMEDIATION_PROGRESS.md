@@ -69,7 +69,7 @@ into `createTenantSchema`, parity test 5/5). Regenerate: `pnpm --filter
 - [x] DB-007 crypto key fails closed everywhere except automated tests
 - [x] DB-011 users.mfa_secret now encryptedText (NULL/legacy-plaintext safe on read)
 - [x] QA-002 attendance.getSubtree — tree columns only (no PII decrypt) + subtree-only attendance
-- [ ] QA-003 leave.runAccrual per-row writes → bulk
+- [x] QA-003 leave.runAccrual → bulk insert + concurrent updates
 - [x] QA-012 employees trigram search index (via provisioning)
 
 ## Phase 4 — Quality / hygiene
