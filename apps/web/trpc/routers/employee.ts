@@ -6,6 +6,14 @@ import { and, eq, like, desc, asc, count, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { writeAudit, SALARY_FIELDS, pickChanged } from "../audit";
 import { getManagedDepartmentIds } from "../scoping";
+import { can } from "@hrms-app/auth/rbac";
+
+/** Null out salary fields on an employee row for callers lacking payroll:view_company (RBAC-003). */
+function redactSalary<T extends Record<string, unknown>>(row: T): T {
+  const out: Record<string, unknown> = { ...row };
+  for (const k of SALARY_FIELDS) if (k in out) out[k] = null;
+  return out as T;
+}
 
 const SALARY_AUTHORISED_ROLES = ["super_admin", "hr_manager", "payroll_admin"] as const;
 const PROFILE_AUTHORISED_ROLES = ["super_admin", "hr_manager", "hr_specialist"] as const;
@@ -36,17 +44,22 @@ export const employeeRouter = createTRPCRouter({
         : schema.tenant.employees.createdAt;
       const orderBy = (input?.sortDir ?? "desc") === "asc" ? asc(sortColumn) : desc(sortColumn);
 
-      return await ctx.db.query.employees.findMany({
+      const rows = await ctx.db.query.employees.findMany({
         where,
         with: { department: true },
         orderBy,
         limit: input?.pageSize ?? 20,
         offset: input?.page ? (input.page - 1) * (input.pageSize ?? 20) : 0,
       });
+      // RBAC-003/API-004: roles without payroll:view_company must not see salary.
+      if (!can(ctx.user.role, "payroll:view_company")) {
+        return rows.map(redactSalary);
+      }
+      return rows;
     }),
 
   getById: companyProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
-    return await ctx.db.query.employees.findFirst({
+    const employee = await ctx.db.query.employees.findFirst({
       where: eq(schema.tenant.employees.id, input),
       with: {
         department: true,
@@ -56,6 +69,22 @@ export const employeeRouter = createTRPCRouter({
         payslips: true,
       },
     });
+    if (!employee) return null;
+
+    // RBAC-003: a Department Manager may only open employees in the department(s)
+    // they manage; getById was previously fetchable for any id in the tenant.
+    if (ctx.user.role === "department_manager") {
+      const managed = await getManagedDepartmentIds(ctx);
+      if (!employee.departmentId || !managed.includes(employee.departmentId)) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "This employee is outside your department." });
+      }
+    }
+
+    // RBAC-003/API-004: strip salary + payslips for roles lacking payroll:view_company.
+    if (!can(ctx.user.role, "payroll:view_company")) {
+      return { ...redactSalary(employee), payslips: [] };
+    }
+    return employee;
   }),
 
   /**

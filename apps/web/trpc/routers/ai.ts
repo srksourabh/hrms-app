@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, companyProcedure, protectedProcedure, requireCapability } from "../server";
+import { createTRPCRouter, protectedProcedure, requireCapability } from "../server";
 import { schema } from "@hrms-app/db";
 import {
   aiAssistantSchema, aiAssistantUpdateSchema,
@@ -43,7 +43,9 @@ Your question: "${last.slice(0, 240)}"
 
 export const aiRouter = createTRPCRouter({
   assistant: createTRPCRouter({
-    list: companyProcedure
+    // RBAC-008: assistant config (system prompts / model) is a settings concern,
+    // not readable by every staff role — matches create/update/delete below.
+    list: requireCapability("settings:manage")
       .query(async ({ ctx }) => {
         return await ctx.db.query.aiAssistants.findMany({
           orderBy: desc(schema.tenant.aiAssistants.createdAt),
@@ -51,7 +53,7 @@ export const aiRouter = createTRPCRouter({
         });
       }),
 
-    getById: companyProcedure
+    getById: requireCapability("settings:manage")
       .input(z.object({ id: idSchema }))
       .query(async ({ ctx, input }) => {
         return await ctx.db.query.aiAssistants.findFirst({
@@ -189,7 +191,8 @@ export const aiRouter = createTRPCRouter({
           messages: input.messages.map((m) => ({ role: m.role, content: m.content })),
           temperature: input.temperature ?? 0.3,
           maxTokens: 800,
-          model: input.model,
+          // API-010: use the provider's server-configured default model; never
+          // forward a client-supplied model string.
         });
 
         // Audit the call (best-effort).

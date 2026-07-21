@@ -3,7 +3,6 @@ import { TRPCError } from "@trpc/server";
 import { and, eq, gte, lte, desc, inArray } from "drizzle-orm";
 import {
   createTRPCRouter,
-  companyProcedure,
   protectedProcedure,
   requireRole,
   requireCapability,
@@ -94,7 +93,7 @@ export const attendanceRouter = createTRPCRouter({
 
   // ── Shift assignments ────────────────────────────────────────────────
   assignment: createTRPCRouter({
-    list: companyProcedure
+    list: requireCapability("attendance:view_company")
       .input(
         z
           .object({
@@ -406,7 +405,7 @@ export const attendanceRouter = createTRPCRouter({
     }),
 
   // ── HR / manager view: every employee's day ─────────────────────────
-  list: companyProcedure
+  list: requireCapability("attendance:view_company")
     .input(attendanceQuerySchema.optional().default({}))
     .query(async ({ ctx, input }) => {
       const conditions: ReturnType<typeof eq>[] = [];
@@ -438,7 +437,7 @@ export const attendanceRouter = createTRPCRouter({
     }),
 
   // ── Aggregated monthly stats for HR ─────────────────────────────────
-  monthlyReport: companyProcedure
+  monthlyReport: requireCapability("attendance:view_company")
     .input(
       z.object({
         month: z.string().regex(/^\d{4}-\d{2}$/),
@@ -513,7 +512,7 @@ export const attendanceRouter = createTRPCRouter({
     }),
 
   // ── Exception queue for HR ──────────────────────────────────────────
-  exceptions: companyProcedure
+  exceptions: requireCapability("attendance:view_company")
     .input(
       z
         .object({

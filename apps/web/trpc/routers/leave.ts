@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, companyProcedure, protectedProcedure, requireRole } from "../server";
+import { createTRPCRouter, protectedProcedure, requireRole, requireCapability } from "../server";
 import { schema } from "@hrms-app/db";
 import {
   createLeaveTypeSchema,
@@ -116,7 +116,7 @@ export const leaveRouter = createTRPCRouter({
   }),
 
   request: createTRPCRouter({
-    list: companyProcedure
+    list: requireCapability("leave:view_company")
       .input(
         z
           .object({
@@ -150,7 +150,7 @@ export const leaveRouter = createTRPCRouter({
         });
       }),
 
-    getById: companyProcedure.input(z.string().uuid()).query(async ({ ctx, input }) => {
+    getById: requireCapability("leave:view_company").input(z.string().uuid()).query(async ({ ctx, input }) => {
       return await ctx.db.query.leaveRequests.findFirst({
         where: eq(schema.tenant.leaveRequests.id, input),
         with: { employee: true, leaveType: true, approvedBy: true },
@@ -250,6 +250,35 @@ export const leaveRouter = createTRPCRouter({
         });
         if (!current) throw new TRPCError({ code: "NOT_FOUND", message: "Leave request not found." });
 
+        const days = leaveDays(current.startDate, current.endDate);
+        const year = new Date(current.startDate).getUTCFullYear();
+        const wasApproved = current.status === "approved";
+        const nowApproved = input.data.status === "approved";
+
+        // Guards run BEFORE the write so a rejected transition leaves no
+        // half-applied state (these mutations are not transactional).
+        if (!wasApproved && nowApproved) {
+          // BIZ-005: no one may approve their own leave (segregation of duties).
+          if (ctx.user.employeeId && current.employeeId === ctx.user.employeeId) {
+            throw new TRPCError({ code: "FORBIDDEN", message: "You cannot approve your own leave request." });
+          }
+          // BIZ-004: re-validate the balance at the approval boundary — it may
+          // have been drawn down by other approvals since submission.
+          const bal = await ctx.db.query.leaveBalances.findFirst({
+            where: and(
+              eq(schema.tenant.leaveBalances.employeeId, current.employeeId),
+              eq(schema.tenant.leaveBalances.leaveTypeId, current.leaveTypeId),
+              eq(schema.tenant.leaveBalances.year, year),
+            ),
+          });
+          if (bal && days > parseNumeric(bal.balance)) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Insufficient leave balance: ${days} days requested, ${parseNumeric(bal.balance)} available.`,
+            });
+          }
+        }
+
         const [request] = await ctx.db
           .update(schema.tenant.leaveRequests)
           .set(input.data)
@@ -259,10 +288,6 @@ export const leaveRouter = createTRPCRouter({
         // Balance moves only on the approval boundary: decrement when a request
         // becomes approved, restore when a previously-approved one is
         // rejected/cancelled. Pending↔rejected never touches the balance.
-        const days = leaveDays(current.startDate, current.endDate);
-        const year = new Date(current.startDate).getUTCFullYear();
-        const wasApproved = current.status === "approved";
-        const nowApproved = input.data.status === "approved";
         if (!wasApproved && nowApproved) {
           await adjustLeaveBalance(ctx, current.employeeId, current.leaveTypeId, year, -days);
         } else if (wasApproved && !nowApproved) {
@@ -287,7 +312,7 @@ export const leaveRouter = createTRPCRouter({
   }),
 
   balance: createTRPCRouter({
-    list: companyProcedure
+    list: requireCapability("leave:view_company")
       .input(
         z
           .object({

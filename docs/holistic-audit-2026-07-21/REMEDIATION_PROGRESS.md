@@ -31,10 +31,10 @@ PRIV-002, PRIV-005, PRIV-006, PRIV-008, PRIV-009, PRIV-012(p), PRIV-013, QA-005.
 - [ ] DB-005 employees missing immigration/gcc cols + type divergence
 
 ## Phase 3 — Security / logic sweep (High → Medium)
-- [ ] API-004 / RBAC-003 employee.getById/list over-select salary+PII, not dept-scoped
-- [ ] RBAC-004 attendance/leave company reads on companyProcedure (recruiter over-exposure)
-- [ ] BIZ-004 leave overdraw not re-checked at approval
-- [ ] BIZ-005 leave self-approval (segregation of duties)
+- [x] API-004 / RBAC-003 employee.getById/list — redact salary; dept-scope getById
+- [x] RBAC-004 attendance/leave company reads → requireCapability (recruiter excluded)
+- [x] BIZ-004 leave overdraw re-checked at approval boundary
+- [x] BIZ-005 leave self-approval blocked (segregation of duties)
 - [ ] BIZ-009 payroll updateStatus state-machine shortcuts
 - [ ] BIZ-010 payslip.create arbitrary amounts
 - [ ] BIZ-011 compensation self-approval
@@ -45,12 +45,12 @@ PRIV-002, PRIV-005, PRIV-006, PRIV-008, PRIV-009, PRIV-012(p), PRIV-013, QA-005.
 - [ ] BIZ-006 leave back-dating
 - [ ] BIZ-012 offer state-machine guard
 - [ ] API-009 retention update employeeId/status spread
-- [ ] API-010 ai.chat client model string
+- [x] API-010 ai.chat no longer forwards client model string
 - [ ] RBAC-007 recruitment application/referral full client payload
-- [ ] RBAC-008 ai.assistant list/getById companyProcedure
+- [x] RBAC-008 ai.assistant list/getById → requireCapability(settings:manage)
 - [ ] PRIV-010 salary cert/experience letter unaudited PII exposure
 - [ ] PRIV-011 audit log omits auth/role/export/PII-view events
-- [ ] PRIV-001 CSP script-src 'unsafe-inline'
+- [def] PRIV-001 CSP script-src 'unsafe-inline' — needs nonce-based CSP (Next hydration would break); real project, not a safe pre-demo fix
 - [ ] AUTH-003 no absolute session lifetime / stale role in JWT
 - [ ] AUTH-004 lockout columns absent from Drizzle schema (schema drift)
 - [ ] AUTH-006 MFA not enforced by policy
