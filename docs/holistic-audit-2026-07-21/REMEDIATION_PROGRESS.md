@@ -90,7 +90,7 @@ into `createTenantSchema`, parity test 5/5). Regenerate: `pnpm --filter
 ## Deferred (needs user action or large effort; not demo-blocking) — documented, not silently dropped
 - [def] PRIV-003 real Supabase password in `_db_url.txt` → remove file from tree + USER must ROTATE
 - [def] PRIV-004 Vercel OIDC tokens in .env.local (expected local artifact; gitignored)
-- [def] PRIV-007 auth failure logs email — fix if quick
+- [x] PRIV-007 auth failure/MFA logs now use internal user id, not email
 - [def] QA-004 drizzle-orm 0.38→>=0.45.2 (major bump, regression risk) — evaluate
 - [def] QA-007 tests for retention/recruitment routers (large)
 - [def] QA-008 un-skip tenant-isolation tests (needs DATABASE_URL)

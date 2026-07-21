@@ -144,7 +144,8 @@ const nextAuthResult: AuthResult = NextAuth({
         const valid = await compare(password, user.passwordHash);
         if (!valid) {
           await recordFailedAttempt(user.id, lock?.attempts ?? 0);
-          console.warn('[auth] failed login attempt for', email);
+          // PRIV-007: log the internal user id, never the email (PII).
+          console.warn('[auth] failed login attempt for user', user.id);
           return null;
         }
 
@@ -154,7 +155,7 @@ const nextAuthResult: AuthResult = NextAuth({
         if (user.mfaSecret) {
           const totp = typeof credentials.totp === 'string' ? credentials.totp : '';
           if (!verifyTotp(user.mfaSecret, totp)) {
-            console.warn('[auth] MFA verification failed for', email);
+            console.warn('[auth] MFA verification failed for user', user.id);
             return null;
           }
         }
