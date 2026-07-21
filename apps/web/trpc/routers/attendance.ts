@@ -718,9 +718,16 @@ export const attendanceRouter = createTRPCRouter({
           ? ctx.user.employeeId ?? ""
           : input.rootEmployeeId;
 
-      // Recursive CTE to get all employees under rootEmployeeId
+      // Only the columns the org tree needs — avoids decrypting every
+      // employee's PII (iqama/passport/bank) just to draw a chart (QA-002).
       const subtree = await ctx.db.query.employees.findMany({
-        with: { department: true },
+        columns: {
+          id: true,
+          fullName: true,
+          managerEmployeeId: true,
+          employmentStatus: true,
+        },
+        with: { department: { columns: { name: true } } },
       });
 
       // Build tree in memory
@@ -751,8 +758,19 @@ export const attendanceRouter = createTRPCRouter({
         node.children = childMap.get(node.id) ?? [];
       }
 
-      // Get last known location for each employee in subtree
-      const empIds = nodes.map((n) => n.id);
+      // Collect only the requested subtree's employees, not the whole org
+      // (QA-002 — attendance was previously fetched for every employee).
+      const subtreeIds: string[] = [];
+      const stack: TreeNode[] = [rootNode];
+      while (stack.length > 0) {
+        const node = stack.pop();
+        if (!node) break;
+        subtreeIds.push(node.id);
+        for (const child of node.children) stack.push(child);
+      }
+
+      // Get last known location for each employee in the subtree
+      const empIds = subtreeIds;
       if (empIds.length > 0) {
         const latestRecords = await ctx.db.query.attendanceRecords.findMany({
           where: inArray(schema.tenant.attendanceRecords.employeeId, empIds),

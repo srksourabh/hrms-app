@@ -59,15 +59,18 @@ into `createTenantSchema`, parity test 5/5). Regenerate: `pnpm --filter
 - [ ] PRIV-010 salary cert/experience letter unaudited PII exposure
 - [ ] PRIV-011 audit log omits auth/role/export/PII-view events
 - [def] PRIV-001 CSP script-src 'unsafe-inline' — needs nonce-based CSP (Next hydration would break); real project, not a safe pre-demo fix
-- [ ] AUTH-003 no absolute session lifetime / stale role in JWT
-- [ ] AUTH-004 lockout columns absent from Drizzle schema (schema drift)
-- [ ] AUTH-006 MFA not enforced by policy
-- [ ] AUTH-008 MFA no backup codes / TOTP throttle
+- [def] AUTH-003 no absolute session lifetime / stale role in JWT — session model change
+- [def] AUTH-004 lockout columns absent from Drizzle schema — migration 0008 adds them
+        (IF NOT EXISTS); auth uses raw SQL so lockout works once 0008 is applied. Adding
+        to the Drizzle schema before confirming 0008 ran on the live DB would break user
+        queries → deferred pending DB confirmation.
+- [def] AUTH-006 MFA not enforced by policy — product decision
+- [def] AUTH-008 MFA no backup codes / TOTP throttle — feature
 - [x] DB-007 crypto key fails closed everywhere except automated tests
 - [x] DB-011 users.mfa_secret now encryptedText (NULL/legacy-plaintext safe on read)
-- [ ] QA-002 attendance.getSubtree fetches whole tenant
+- [x] QA-002 attendance.getSubtree — tree columns only (no PII decrypt) + subtree-only attendance
 - [ ] QA-003 leave.runAccrual per-row writes → bulk
-- [ ] QA-012 employees fullName leading-wildcard search
+- [x] QA-012 employees trigram search index (via provisioning)
 
 ## Phase 4 — Quality / hygiene
 - [ ] QA-006 lint 372 errors (no-explicit-any / non-null-assertion) — web app
