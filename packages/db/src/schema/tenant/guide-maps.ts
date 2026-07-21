@@ -8,5 +8,5 @@ export const guideMaps = pgTable("guide_maps", {
   centerLng: decimal("center_lng", { precision: 10, scale: 7 }).notNull(),
   zoom: text("zoom").notNull().default("12"),
   createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });

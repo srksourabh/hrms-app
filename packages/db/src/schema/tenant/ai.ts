@@ -24,8 +24,8 @@ export const aiAssistants = pgTable("ai_assistants", {
   capabilities: jsonb("capabilities").default([]),
   isActive: boolean("is_active").default(true).notNull(),
   config: jsonb("config"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const aiSuggestions = pgTable("ai_suggestions", {
@@ -41,10 +41,10 @@ export const aiSuggestions = pgTable("ai_suggestions", {
   confidence: aiConfidenceLevelEnum("confidence").default("medium").notNull(),
   source: text("source"),
   metadata: jsonb("metadata"),
-  appliedAt: timestamp("applied_at"),
+  appliedAt: timestamp("applied_at", { withTimezone: true }),
   appliedBy: uuid("applied_by"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   employeeIdx: index("ai_suggestions_employee_idx").on(table.employeeId),
   typeIdx: index("ai_suggestions_type_idx").on(table.type),
@@ -61,7 +61,7 @@ export const aiJobDescriptionEnhancements = pgTable("ai_jd_enhancements", {
   suggestions: jsonb("suggestions"),
   modelUsed: text("model_used"),
   isApplied: boolean("is_applied").default(false),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   jobIdx: index("ai_jd_enhancements_job_idx").on(table.jobRequisitionId),
 }));
@@ -80,7 +80,7 @@ export const aiCandidateMatchings = pgTable("ai_candidate_matchings", {
   gaps: jsonb("gaps"),
   recommendations: jsonb("recommendations"),
   modelUsed: text("model_used"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   candidateIdx: index("ai_candidate_matchings_candidate_idx").on(table.candidateId),
   jobIdx: index("ai_candidate_matchings_job_idx").on(table.jobRequisitionId),
@@ -99,7 +99,7 @@ export const aiInterviewFeedback = pgTable("ai_interview_feedback", {
   hiringRecommendation: text("hiring_recommendation"),
   suggestedQuestions: jsonb("suggested_questions"),
   modelUsed: text("model_used"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   interviewIdx: index("ai_interview_feedback_interview_idx").on(table.interviewId),
 }));
@@ -114,7 +114,7 @@ export const aiSkillRecommendations = pgTable("ai_skill_recommendations", {
   estimatedTimeline: text("estimated_timeline"),
   priority: aiConfidenceLevelEnum("priority").default("medium"),
   notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   employeeIdx: index("ai_skill_recs_employee_idx").on(table.employeeId),
 }));
@@ -134,8 +134,8 @@ export const aiSalaryBenchmarks = pgTable("ai_salary_benchmarks", {
   source: text("source"),
   dataFreshness: date("data_freshness"),
   metadata: jsonb("metadata"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const aiChurnPredictions = pgTable("ai_churn_predictions", {
@@ -149,8 +149,8 @@ export const aiChurnPredictions = pgTable("ai_churn_predictions", {
   modelVersion: text("model_version"),
   predictionDate: date("prediction_date").notNull(),
   isAccurate: boolean("is_accurate"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   employeeIdx: index("ai_churn_predictions_employee_idx").on(table.employeeId),
   riskIdx: index("ai_churn_predictions_risk_idx").on(table.riskLevel),
@@ -168,7 +168,7 @@ export const aiCompliancePredictions = pgTable("ai_compliance_predictions", {
   regulatoryReferences: jsonb("regulatory_references"),
   isResolved: boolean("is_resolved").default(false),
   predictionDate: date("prediction_date").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   deptIdx: index("ai_compliance_preds_dept_idx").on(table.departmentId),
   employeeIdx: index("ai_compliance_preds_employee_idx").on(table.employeeId),
@@ -185,7 +185,7 @@ export const aiSurveySentiments = pgTable("ai_survey_sentiments", {
   keyThemes: jsonb("key_themes"),
   actionItems: jsonb("action_items"),
   employeeGroup: text("employee_group"),
-  analyzedAt: timestamp("analyzed_at").defaultNow().notNull(),
+  analyzedAt: timestamp("analyzed_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   surveyIdx: index("ai_survey_sentiments_survey_idx").on(table.surveyId),
 }));
@@ -203,7 +203,7 @@ export const aiAuditLogs = pgTable("ai_audit_logs", {
   success: boolean("success").notNull().default(true),
   errorMessage: text("error_message"),
   performedBy: uuid("performed_by"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   actionIdx: index("ai_audit_logs_action_idx").on(table.action),
   entityIdx: index("ai_audit_logs_entity_idx").on(table.entityType, table.entityId),
@@ -218,8 +218,8 @@ export const aiRetentionRiskFlags = pgTable("ai_retention_risk_flags", {
   indicators: jsonb("indicators"),
   suggestedActions: jsonb("suggested_actions"),
   isResolved: boolean("is_resolved").default(false),
-  resolvedAt: timestamp("resolved_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   employeeIdx: index("ai_retention_risk_flags_employee_idx").on(table.employeeId),
   typeIdx: index("ai_retention_risk_flags_type_idx").on(table.flagType),

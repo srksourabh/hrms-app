@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, date } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, date, index } from "drizzle-orm/pg-core";
 import { employees } from "./employees";
 import { leaveTypes } from "./leave_types";
 
@@ -16,9 +16,16 @@ export const leaveRequests = pgTable("leave_requests", {
   endDate: date("end_date").notNull(),
   status: text("status", { enum: leaveStatusEnum }).notNull().default("pending"),
   approvedByUserId: uuid("approved_by_user_id"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull()
     .$onUpdate(() => new Date()),
-});
+}, (table) => ({
+  // Names match migration 0006 (existing tenants already have these).
+  employeeCreatedIdx: index("leave_requests_employee_created_idx").on(
+    table.employeeId,
+    table.createdAt.desc(),
+  ),
+  statusIdx: index("leave_requests_status_idx").on(table.status),
+}));

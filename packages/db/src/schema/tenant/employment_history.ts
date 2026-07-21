@@ -11,5 +11,5 @@ export const employmentHistory = pgTable("employment_history", {
   eventType: text("event_type", { enum: historyEventEnum }).notNull(),
   effectiveDate: date("effective_date").notNull(),
   details: jsonb("details"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });

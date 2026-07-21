@@ -8,6 +8,6 @@ export const wageFiles = pgTable("wage_files", {
     .references(() => payrollRuns.id, { onDelete: "cascade" }),
   format: text("format").notNull().default("mudad"),
   fileUrl: text("file_url"),
-  submittedAt: timestamp("submitted_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });

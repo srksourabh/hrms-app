@@ -1,4 +1,5 @@
-import { pgTable, uuid, text, timestamp, date, numeric } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, date, numeric, index } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { employees } from "./employees";
 
 // Lifecycle states for an expense submission.
@@ -39,11 +40,18 @@ export const expenses = pgTable("expenses", {
   receiptUrl: text("receipt_url"),
   status: text("status", { enum: expenseStatusEnum }).notNull().default("pending"),
   rejectionReason: text("rejection_reason"),
-  approvedAt: timestamp("approved_at"),
-  paidAt: timestamp("paid_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull()
     .$onUpdate(() => new Date()),
-});
+}, (table) => ({
+  // Names match migration 0006 (existing tenants already have these).
+  employeeStatusIdx: index("expenses_employee_status_idx").on(table.employeeId, table.status),
+  approverStatusIdx: index("expenses_approver_status_idx")
+    .on(table.approverEmployeeId, table.status)
+    .where(sql`${table.approverEmployeeId} IS NOT NULL`),
+  categoryDateIdx: index("expenses_category_date_idx").on(table.category, table.expenseDate),
+}));

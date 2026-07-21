@@ -41,13 +41,13 @@ export const qiwaContracts = pgTable("qiwa_contracts", {
   employerContribution: numeric("employer_contribution", { precision: 12, scale: 2 }).default("0"),
   qiwaPayload: jsonb("qiwa_payload"),
   qiwaResponse: jsonb("qiwa_response"),
-  lastSyncAt: timestamp("last_sync_at"),
+  lastSyncAt: timestamp("last_sync_at", { withTimezone: true }),
   syncError: text("sync_error"),
   isSaudizationPriority: boolean("is_saudization_priority").default(false),
   nationality: text("nationality"),
   iqamaExpiryDate: date("iqama_expiry_date"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull()
     .$onUpdate(() => new Date()),
@@ -68,7 +68,7 @@ export const qiwaSyncLogs = pgTable("qiwa_sync_logs", {
   responsePayload: jsonb("response_payload"),
   status: text("status").notNull(),
   errorMessage: text("error_message"),
-  performedAt: timestamp("performed_at").defaultNow().notNull(),
+  performedAt: timestamp("performed_at", { withTimezone: true }).defaultNow().notNull(),
   durationMs: integer("duration_ms"),
 }, (table) => ({
   contractIdx: index("qiwa_sync_logs_contract_idx").on(table.contractId),

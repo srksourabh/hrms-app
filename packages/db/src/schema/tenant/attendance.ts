@@ -54,8 +54,8 @@ export const shifts = pgTable("shifts", {
   workDays: text("work_days").notNull().default("sun,mon,tue,wed,thu"),
   breakMinutes: integer("break_minutes").notNull().default(60),
   isActive: integer("is_active").notNull().default(1),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull()
     .$onUpdate(() => new Date()),
@@ -76,7 +76,7 @@ export const shiftAssignments = pgTable(
       .references(() => shifts.id, { onDelete: "restrict" }),
     effectiveFrom: date("effective_from").notNull(),
     effectiveTo: date("effective_to"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => ({
     empIdx: index("shift_assignments_emp_idx").on(table.employeeId),
@@ -100,8 +100,8 @@ export const attendanceRecords = pgTable(
     punchSequence: integer("punch_sequence").notNull().default(1),
     shiftId: uuid("shift_id").references(() => shifts.id, { onDelete: "set null" }),
 
-    punchInAt: timestamp("punch_in_at"),
-    punchOutAt: timestamp("punch_out_at"),
+    punchInAt: timestamp("punch_in_at", { withTimezone: true }),
+    punchOutAt: timestamp("punch_out_at", { withTimezone: true }),
 
     scheduledStart: time("scheduled_start"),
     scheduledEnd: time("scheduled_end"),
@@ -120,8 +120,8 @@ export const attendanceRecords = pgTable(
     punchInAccuracy: integer("punch_in_accuracy"),
     notes: text("notes"),
 
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .notNull()
       .$onUpdate(() => new Date()),
@@ -155,10 +155,10 @@ export const attendanceExceptions = pgTable(
     minutes: integer("minutes"),
     description: text("description"),
     resolvedByUserId: uuid("resolved_by_user_id"),
-    resolvedAt: timestamp("resolved_at"),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
     resolutionNotes: text("resolution_notes"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .notNull()
       .$onUpdate(() => new Date()),
@@ -166,6 +166,8 @@ export const attendanceExceptions = pgTable(
   (table) => ({
     statusIdx: index("attendance_exceptions_status_idx").on(table.status),
     empIdx: index("attendance_exceptions_emp_idx").on(table.employeeId),
+    // Name matches migration 0006 (existing tenants already have it).
+    recordIdx: index("attendance_exceptions_record_idx").on(table.attendanceRecordId),
   }),
 );
 

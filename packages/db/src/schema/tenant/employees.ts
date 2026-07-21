@@ -1,4 +1,5 @@
-import { pgTable, uuid, text, timestamp, pgEnum, numeric, date } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, pgEnum, numeric, date, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { departments } from "./departments";
 import { encryptedText } from "../../crypto";
 
@@ -100,9 +101,24 @@ export const employees = pgTable("employees", {
   rehireReason:   text("rehire_reason"),
 
   // ── Timestamps ─────────────────────────────────────────────────────────
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull()
     .$onUpdate(() => new Date()),
-});
+}, (table) => ({
+  // Hot-path filters (QA-001). Names match migration 0006 so existing tenant
+  // schemas (already indexed by the 0006 backfill) stay in sync with new ones.
+  departmentIdx: index("employees_department_idx")
+    .on(table.departmentId)
+    .where(sql`${table.departmentId} IS NOT NULL`),
+  statusIdx: index("employees_status_idx").on(table.employmentStatus),
+  managerIdx: index("employees_manager_idx")
+    .on(table.managerEmployeeId)
+    .where(sql`${table.managerEmployeeId} IS NOT NULL`),
+  // DB-level duplicate-iqama backstop (migration 0009). Deterministic
+  // encryption keeps equality — and therefore uniqueness — meaningful.
+  iqamaUnique: uniqueIndex("employees_iqama_unique")
+    .on(table.iqamaNumberEnc)
+    .where(sql`${table.iqamaNumberEnc} IS NOT NULL`),
+}));

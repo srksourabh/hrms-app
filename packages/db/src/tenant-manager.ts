@@ -2,6 +2,7 @@ import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import * as tenantSchema from "./schema/tenant";
 import * as publicSchema from "./schema/public";
+import { TENANT_DDL_STATEMENTS } from "./tenant-ddl.generated";
 
 const ADMIN_DB_URL = process.env.DATABASE_URL ?? "postgresql://postgres:***@localhost:5432/hrms-app";
 
@@ -109,46 +110,19 @@ export async function createTenantSchema(schemaName: string) {
     await sql.unsafe(`SET search_path TO "${schemaName}"`);
     await sql.unsafe(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`);
     await sql.unsafe(`CREATE EXTENSION IF NOT EXISTS "pgcrypto";`);
-    await sql.unsafe(generateTenantDDL());
+    // DB-001: provision the FULL tenant schema (every table + enum + index +
+    // trigger) from the generated, schema-derived DDL — not a hand-maintained
+    // 2-table subset that left new tenants structurally broken. Statements are
+    // unqualified and land in the schema pinned by the search_path above.
+    // Regenerate with `pnpm --filter @hrms-app/db gen:tenant-ddl`; a parity
+    // test enforces the checked-in generated file matches the Drizzle schema.
+    for (const statement of TENANT_DDL_STATEMENTS) {
+      await sql.unsafe(statement);
+    }
     return true;
   } finally {
     await sql.end();
   }
-}
-
-function generateTenantDDL(): string {
-  return `
-    CREATE TABLE IF NOT EXISTS "departments" (
-      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-      name TEXT NOT NULL,
-      parent_department_id UUID,
-      head_employee_id UUID,
-      created_at TIMESTAMP DEFAULT NOW() NOT NULL,
-      updated_at TIMESTAMP DEFAULT NOW() NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS "employees" (
-      id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-      department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
-      manager_employee_id UUID,
-      iqama_number_enc TEXT,
-      passport_number_enc TEXT,
-      bank_iban_enc TEXT,
-      nationality TEXT NOT NULL CHECK (nationality IN ('saudi', 'expat', 'gcc')),
-      full_name TEXT NOT NULL,
-      employment_status TEXT NOT NULL DEFAULT 'active' CHECK (employment_status IN ('active','terminated','suspended','on_leave')),
-      hire_date DATE NOT NULL,
-      termination_date DATE,
-      gosi_registration_date DATE,
-      gosi_system TEXT CHECK (gosi_system IN ('old', 'new')),
-      salary_basic NUMERIC(12,2) NOT NULL,
-      salary_housing NUMERIC(12,2) NOT NULL DEFAULT 0,
-      salary_transport NUMERIC(12,2) NOT NULL DEFAULT 0,
-      rehire_eligible TEXT,
-      rehire_reason TEXT,
-      created_at TIMESTAMP DEFAULT NOW() NOT NULL,
-      updated_at TIMESTAMP DEFAULT NOW() NOT NULL
-    );
-  `;
 }
 
 export async function createTenantRegistry(

@@ -19,6 +19,6 @@ export const policyDocuments = pgTable("policy_documents", {
   expiryDate: date("expiry_date"),
   // Audit
   createdBy: text("created_by").notNull(),     // user id
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull().$onUpdate(() => new Date()),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull().$onUpdate(() => new Date()),
 });

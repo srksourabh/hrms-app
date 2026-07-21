@@ -23,12 +23,19 @@ PRIV-002, PRIV-005, PRIV-006, PRIV-008, PRIV-009, PRIV-012(p), PRIV-013, QA-005.
 - [x] BIZ-007 leave accrual compounding (~6.5x) — idempotent recompute + idempotency test
 - [x] BIZ-008 duplicate EOSB settlement — guard on computed settlement per employee
 
-## Phase 2 — Criticals: provisioning (wave 2, in progress)
-- [~] DB-001 tenant DDL builds 2/24 tables → generator + generated file + wire tenant-manager + parity test
-- [ ] DB-002 migrations 0001/0002 hardcode dev schema
-- [ ] DB-003 audit_logs + append-only trigger in provisioning
-- [ ] DB-004 iqama unique + perf indexes in provisioning
-- [ ] DB-005 employees missing immigration/gcc cols + type divergence
+## Phase 2 — Criticals: provisioning (wave 2) — DONE
+Schema-derived DDL: 72 tables + 40 enums + indexes + triggers generated from
+the Drizzle schema (`tenant-ddl-builder.ts` → `tenant-ddl.generated.ts`, wired
+into `createTenantSchema`, parity test 5/5). Regenerate: `pnpm --filter
+@hrms-app/db gen:tenant-ddl`.
+- [x] DB-001 full 72-table provisioning (was 2/72) + generator + parity test
+- [x] DB-002 superseded — new tenants provision from schema, not the hardcoded
+      dev-schema migrations (legacy migrations retained for history)
+- [x] DB-003 audit_logs table + append-only trigger now in provisioning
+- [x] DB-004 iqama partial-UNIQUE + employee perf indexes now in provisioning
+- [x] DB-005 employees provisioned from full schema (immigration/gcc cols)
+- [x] DB-009 (partial) leave_balances unique + timestamps via EXTRA statements
+- [x] QA-001 employee indexes / QA-012 trigram search index — in provisioning
 
 ## Phase 3 — Security / logic sweep (High → Medium)
 - [x] API-004 / RBAC-003 employee.getById/list — redact salary; dept-scope getById

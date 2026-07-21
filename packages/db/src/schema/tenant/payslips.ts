@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, numeric } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, numeric, index } from "drizzle-orm/pg-core";
 import { employees } from "./employees";
 import { payrollRuns } from "./payroll_runs";
 
@@ -52,5 +52,9 @@ export const payslips = pgTable("payslips", {
   pdfUrl:      text("pdf_url"),
   /** JSON breakdown persisted for audit trail and the dashboard view. */
   breakdown:    text("breakdown"),
-  createdAt:   timestamp("created_at").defaultNow().notNull(),
-});
+  createdAt:   timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  // Names match migration 0006 (existing tenants already have these).
+  runCreatedIdx: index("payslips_run_created_idx").on(table.payrollRunId, table.createdAt.desc()),
+  employeeIdx: index("payslips_employee_idx").on(table.employeeId),
+}));

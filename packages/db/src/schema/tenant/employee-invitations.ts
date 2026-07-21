@@ -23,9 +23,9 @@ export const employeeInvitations = pgTable("employee_invitations", {
   departmentId: uuid("department_id"),
   fullName: text("full_name").notNull(),
   status: inviteStatusEnum("status").default("pending").notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  acceptedAt: timestamp("accepted_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   emailIdx: index("invitations_email_idx").on(table.email),
   tokenIdx: index("invitations_token_idx").on(table.token),
