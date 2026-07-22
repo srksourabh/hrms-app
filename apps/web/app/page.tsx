@@ -2,8 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@hrms-app/auth";
 import { can, type AppRole, type Capability } from "@hrms-app/auth/rbac";
-import { adminDb, getTenantDb, tenants } from "@hrms-app/db";
-import { eq, sql } from "drizzle-orm";
+import { adminDb, getTenantDb, tenants, schema } from "@hrms-app/db";
+import { eq } from "drizzle-orm";
 import { formatDual, todayHijri } from "@hrms-app/date";
 import {
   ArrowRight,
@@ -69,20 +69,21 @@ export default async function RootPage() {
           needsOnboarding = true;
         } else {
           const tenantDb = getTenantDb(tenant.schemaName);
-          const [empCount] = await tenantDb.execute(sql`SELECT COUNT(*)::int as count FROM "employees" WHERE "employment_status" = 'active'`);
-          const [deptCount] = await tenantDb.execute(sql`SELECT COUNT(*)::int as count FROM "departments"`);
-          const [jobCount] = await tenantDb.execute(sql`SELECT COUNT(*)::int as count FROM "job_requisitions" WHERE "status" = 'open'`);
-          const [totalHeadcount] = await tenantDb.execute(sql`SELECT COUNT(*)::int as count FROM "employees"`);
-          const [payslipCount] = await tenantDb.execute(sql`SELECT COUNT(*)::int as count FROM "payslips"`);
+          // Counts via the Drizzle query builder (which honours the connection
+          // search_path) — NOT tenantDb.execute(). The patched execute forwards
+          // to postgres unsafe(), which silently returns no rows for a Drizzle
+          // sql`` object, so every count came back 0 despite live data.
+          const [activeCount, departmentCount, openJobsCount, totalHeadcount, payslipCount] =
+            await Promise.all([
+              tenantDb.$count(schema.tenant.employees, eq(schema.tenant.employees.employmentStatus, "active")),
+              tenantDb.$count(schema.tenant.departments),
+              tenantDb.$count(schema.tenant.jobRequisitions, eq(schema.tenant.jobRequisitions.status, "open")),
+              tenantDb.$count(schema.tenant.employees),
+              tenantDb.$count(schema.tenant.payslips),
+            ]);
 
-          if (totalHeadcount && Number(totalHeadcount.count) > 0) {
-            dbCounts = {
-              activeCount: Number(empCount?.count ?? 0),
-              departmentCount: Number(deptCount?.count ?? 0),
-              openJobsCount: Number(jobCount?.count ?? 0),
-              totalHeadcount: Number(totalHeadcount?.count ?? 0),
-              payslipCount: Number(payslipCount?.count ?? 0),
-            };
+          if (totalHeadcount > 0) {
+            dbCounts = { activeCount, departmentCount, openJobsCount, totalHeadcount, payslipCount };
           }
         }
       }
