@@ -73,14 +73,17 @@ export default async function RootPage() {
           // search_path) — NOT tenantDb.execute(). The patched execute forwards
           // to postgres unsafe(), which silently returns no rows for a Drizzle
           // sql`` object, so every count came back 0 despite live data.
-          const [activeCount, departmentCount, openJobsCount, totalHeadcount, payslipCount] =
-            await Promise.all([
-              tenantDb.$count(schema.tenant.employees, eq(schema.tenant.employees.employmentStatus, "active")),
-              tenantDb.$count(schema.tenant.departments),
-              tenantDb.$count(schema.tenant.jobRequisitions, eq(schema.tenant.jobRequisitions.status, "open")),
-              tenantDb.$count(schema.tenant.employees),
-              tenantDb.$count(schema.tenant.payslips),
-            ]);
+          //
+          // Run SEQUENTIALLY, not Promise.all: the tenant/admin pools together
+          // sit at Supabase's session-mode ceiling (pool_size 15), so firing
+          // five concurrent counts per render can exhaust the pool
+          // (EMAXCONNSESSION) and make the whole block fall back to 0. Each
+          // indexed COUNT is sub-millisecond, so one-at-a-time is fine.
+          const activeCount = await tenantDb.$count(schema.tenant.employees, eq(schema.tenant.employees.employmentStatus, "active"));
+          const departmentCount = await tenantDb.$count(schema.tenant.departments);
+          const openJobsCount = await tenantDb.$count(schema.tenant.jobRequisitions, eq(schema.tenant.jobRequisitions.status, "open"));
+          const totalHeadcount = await tenantDb.$count(schema.tenant.employees);
+          const payslipCount = await tenantDb.$count(schema.tenant.payslips);
 
           if (totalHeadcount > 0) {
             dbCounts = { activeCount, departmentCount, openJobsCount, totalHeadcount, payslipCount };
