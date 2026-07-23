@@ -6,9 +6,9 @@ import { useState } from "react";
 import { productBrand } from "@hrms-app/config/brand";
 import { BrandMark } from "~/components/brand/brand-lockup";
 
-// Presentation credentials — shown only when explicitly enabled for demos.
+// Presentation credentials — shown for easy demo access.
 // These are seeded users in the database.
-const SHOW_PRESENTATION_CREDENTIALS = false;
+const SHOW_PRESENTATION_CREDENTIALS = true;
 
 const PRESENTATION_USERS = SHOW_PRESENTATION_CREDENTIALS
   ? [

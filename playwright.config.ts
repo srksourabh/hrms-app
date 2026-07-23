@@ -30,7 +30,7 @@ export default defineConfig({
     : {
         command: `pnpm --filter @hrms-app/web exec next start -p ${port}`,
         url: baseURL,
-        reuseExistingServer: false,
+        reuseExistingServer: true,
         timeout: 120_000,
         env: {
           DEMO_MODE: "true",
