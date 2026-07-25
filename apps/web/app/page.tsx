@@ -12,53 +12,11 @@ import {
 } from "lucide-react";
 import { DashboardShell } from "~/components/dashboard-shell";
 import { DashboardProviders } from "~/components/dashboard-providers";
-import { MetricCard } from "~/components/hr/ui";
-import { getDashboardData, getSessionUser, tenantIdFor } from "~/lib/hr-direct";
+import { getSessionUser } from "~/lib/hr-direct";
 import { saudiPayrollTracks } from "~/lib/saudi-payroll";
-
-function money(value: number) {
-  return `SAR ${Math.round(value).toLocaleString("en-US")}`;
-}
-
-type DashboardData = Awaited<ReturnType<typeof getDashboardData>>;
-
-function isTransientDashboardError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error);
-  return /connection closed|connection terminated|econnreset|socket hang up|timeout/i.test(message);
-}
-
-function emptyDashboardData(): DashboardData {
-  return {
-    metrics: {
-      employees: 0,
-      departments: 0,
-      pendingLeave: 0,
-      pendingExpenses: 0,
-      payrollNet: 0,
-      complianceAttention: 0,
-    },
-    reports: [],
-    employees: [],
-  };
-}
-
-async function loadDashboardData(tenantId: string, attempt = 1): Promise<DashboardData> {
-  try {
-    return await getDashboardData(tenantId);
-  } catch (error) {
-    if (attempt < 3 && isTransientDashboardError(error)) {
-      await new Promise((resolve) => setTimeout(resolve, 150 * attempt));
-      return loadDashboardData(tenantId, attempt + 1);
-    }
-    console.error("[DashboardData Fallback]", error);
-    return emptyDashboardData();
-  }
-}
 
 export default async function HomePage() {
   const user = await getSessionUser();
-  const tenantId = tenantIdFor(user);
-  const { metrics, reports, employees } = await loadDashboardData(tenantId);
   const canManageEmployees = ["super_admin", "hr_manager", "hr_specialist"].includes(user.role ?? "");
   const primaryAction = canManageEmployees
     ? { href: "/employees", label: "Manage employees" }
@@ -83,6 +41,15 @@ export default async function HomePage() {
           { href: "/compliance", label: "Audit evidence", icon: FileCheck2, detail: "Saudi regulatory readiness log" },
         ];
 
+  const highlights = [
+    { label: "Employees", value: canManageEmployees ? "Manage" : "Self service" },
+    { label: "Departments", value: "Org tree" },
+    { label: "Attendance", value: "Punch ready" },
+    { label: "Leave", value: "Apply/approve" },
+    { label: "Expenses", value: "Claim/approve" },
+    { label: "Payroll", value: "Saudi ready" },
+  ];
+
   return (
     <DashboardProviders session={{ user, expires: "" }}>
       <DashboardShell user={user} regulatoryContext="saudi" preferredLanguage={user.preferredLanguage ?? "en"}>
@@ -91,7 +58,7 @@ export default async function HomePage() {
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-800">
-                  Saudi HR command center | مركز الموارد البشرية
+                  Saudi HR command center
                 </p>
                 <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
                   Rukn Energy Services HR
@@ -111,12 +78,12 @@ export default async function HomePage() {
           </section>
 
           <section className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
-            <MetricCard label="Active employees" value={String(metrics?.employees ?? 0)} />
-            <MetricCard label="Departments" value={String(metrics?.departments ?? 0)} />
-            <MetricCard label="Pending leave" value={String(metrics?.pendingLeave ?? 0)} />
-            <MetricCard label="Pending expenses" value={String(metrics?.pendingExpenses ?? 0)} />
-            <MetricCard label="Payroll net" value={money(metrics?.payrollNet ?? 0)} />
-            <MetricCard label="Compliance attention" value={String(metrics?.complianceAttention ?? 0)} />
+            {highlights.map((item) => (
+              <div key={item.label} className="rounded-lg border border-slate-200 bg-white p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{item.label}</p>
+                <p className="mt-2 text-lg font-semibold text-slate-950">{item.value}</p>
+              </div>
+            ))}
           </section>
 
           <section className="grid gap-4 lg:grid-cols-3">
@@ -162,61 +129,26 @@ export default async function HomePage() {
             </div>
           </section>
 
-          <section className="grid gap-4 xl:grid-cols-[1.2fr_.8fr]">
-            <div className="rounded-lg border border-slate-200 bg-white p-5">
-              <h2 className="text-lg font-semibold text-slate-950">Current team</h2>
-              <div className="mt-4 overflow-x-auto">
-                <table className="w-full min-w-[720px] text-left text-sm">
-                  <thead className="text-xs uppercase text-slate-500">
-                    <tr>
-                      <th className="border-b border-slate-100 py-2">Employee</th>
-                      <th className="border-b border-slate-100 py-2">Department</th>
-                      <th className="border-b border-slate-100 py-2">Designation</th>
-                      <th className="border-b border-slate-100 py-2">Manager</th>
-                      <th className="border-b border-slate-100 py-2">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {employees.map((employee) => (
-                      <tr key={employee.id}>
-                        <td className="border-b border-slate-100 py-3 font-medium text-slate-900">
-                          {employee.fullName}
-                        </td>
-                        <td className="border-b border-slate-100 py-3 text-slate-600">
-                          {employee.departmentName ?? "-"}
-                        </td>
-                        <td className="border-b border-slate-100 py-3 text-slate-600">
-                          {employee.designationTitle ?? "-"}
-                        </td>
-                        <td className="border-b border-slate-100 py-3 text-slate-600">
-                          {employee.managerName ?? "-"}
-                        </td>
-                        <td className="border-b border-slate-100 py-3 text-slate-600">
-                          {employee.employmentStatus}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          <section className="grid gap-4 lg:grid-cols-3">
+            {[
+              {
+                title: "Employee portal",
+                body: "Every employee can access punch in/out, leave, expenses, and their reporting tree.",
+              },
+              {
+                title: "Admin and HR controls",
+                body: "Admin and HR can manage employees, departments, designations, approvals, reports, and payroll.",
+              },
+              {
+                title: "Saudi compliance",
+                body: "Payroll and compliance coverage includes GOSI, SANED, EOSB, Mudad WPS, Qiwa, Iqama, Nitaqat, and CCHI.",
+              },
+            ].map((item) => (
+              <div key={item.title} className="rounded-lg border border-slate-200 bg-white p-5">
+                <h2 className="text-lg font-semibold text-slate-950">{item.title}</h2>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{item.body}</p>
               </div>
-            </div>
-
-            <div className="rounded-lg border border-slate-200 bg-white p-5">
-              <h2 className="text-lg font-semibold text-slate-950">Reports</h2>
-              <div className="mt-4 space-y-3">
-                {reports.map((report) => (
-                  <div key={report.id} className="rounded-md border border-slate-100 p-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-semibold capitalize text-slate-900">{report.reportType}</p>
-                      <p className="text-xs text-slate-500">
-                        {report.periodStart} to {report.periodEnd}
-                      </p>
-                    </div>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">{report.summary}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            ))}
           </section>
         </div>
       </DashboardShell>
