@@ -21,7 +21,7 @@ const queryConfig = {
   casing: {
     getColumnCasing: (column: { name: string }) => column.name,
   },
-};
+} as const;
 
 export async function executeAdminSql<T = unknown>(query: SQL, attempt = 1): Promise<T[]> {
   const client = postgres(requiredDatabaseUrl(), {
@@ -33,8 +33,8 @@ export async function executeAdminSql<T = unknown>(query: SQL, attempt = 1): Pro
   });
 
   try {
-    const built = query.toQuery(queryConfig);
-    return (await client.unsafe(built.sql, built.params)) as T[];
+    const built = query.toQuery(queryConfig as never);
+    return (await client.unsafe(built.sql, built.params as never[])) as T[];
   } catch (error) {
     if (attempt < 3 && isTransientDbConnectionError(error)) {
       await client.end({ timeout: 1 }).catch(() => undefined);
