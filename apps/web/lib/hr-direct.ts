@@ -182,6 +182,11 @@ function toNumber(value: FormDataEntryValue | null, fallback = 0): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function toCoordinate(value: FormDataEntryValue | null, min: number, max: number): number | null {
+  const n = Number(value ?? Number.NaN);
+  return Number.isFinite(n) && n >= min && n <= max ? n : null;
+}
+
 function toText(value: FormDataEntryValue | null, fallback = ""): string {
   return String(value ?? fallback).trim();
 }
@@ -660,30 +665,67 @@ export async function punchAttendance(formData: FormData) {
     : user.employeeId ?? "";
   if (!employeeId) throw new Error("No employee profile is linked to this login.");
   const mode = toText(formData.get("mode"), "in");
-  const lat = toNumber(formData.get("latitude"), Number.NaN);
-  const lng = toNumber(formData.get("longitude"), Number.NaN);
-  const location = toNullableText(formData.get("locationName"));
+  if (mode !== "in" && mode !== "out") throw new Error("Unsupported attendance punch mode.");
+  const lat = toCoordinate(formData.get("latitude"), -90, 90);
+  const lng = toCoordinate(formData.get("longitude"), -180, 180);
+  const accuracy = toNumber(formData.get("accuracy"), Number.NaN);
+  const location = toNullableText(formData.get("locationName")) ?? "Unspecified location";
+  const accuracyNote = Number.isFinite(accuracy) && accuracy >= 0 ? `GPS accuracy ${Math.round(accuracy)}m` : null;
+
+  const [employee] = await rows<{ id: string }>(sql`
+    select id
+    from public.hr_employees
+    where tenant_id = ${tenantId}
+      and id = ${employeeId}::uuid
+      and employment_status <> 'terminated'
+    limit 1
+  `);
+  if (!employee) throw new Error("Employee is not active or does not belong to this company.");
 
   if (mode === "out") {
     await adminDb.execute(sql`
-      insert into public.hr_attendance (tenant_id, employee_id, work_date, punch_out_at, punch_out_latitude, punch_out_longitude, punch_out_location, status)
-      values (${tenantId}, ${employeeId}::uuid, current_date, now(), ${Number.isFinite(lat) ? lat : null}, ${Number.isFinite(lng) ? lng : null}, ${location}, 'manual_review')
+      insert into public.hr_attendance (
+        tenant_id, employee_id, work_date, punch_out_at, punch_out_latitude,
+        punch_out_longitude, punch_out_location, status, notes
+      )
+      values (${tenantId}, ${employeeId}::uuid, current_date, now(), ${lat}, ${lng}, ${location}, 'manual_review', ${accuracyNote})
       on conflict (tenant_id, employee_id, work_date) do update
       set punch_out_at = now(), punch_out_latitude = excluded.punch_out_latitude, punch_out_longitude = excluded.punch_out_longitude,
         punch_out_location = excluded.punch_out_location,
-        total_minutes = greatest(0, extract(epoch from (now() - coalesce(public.hr_attendance.punch_in_at, now()))) / 60)::int,
+        total_minutes = case
+          when public.hr_attendance.punch_in_at is null then 0
+          else greatest(0, extract(epoch from (now() - public.hr_attendance.punch_in_at)) / 60)::int
+        end,
+        status = case when public.hr_attendance.punch_in_at is null then 'manual_review' else 'present' end,
+        notes = coalesce(excluded.notes, public.hr_attendance.notes),
         updated_at = now()
     `);
   } else {
     await adminDb.execute(sql`
-      insert into public.hr_attendance (tenant_id, employee_id, work_date, punch_in_at, punch_in_latitude, punch_in_longitude, punch_in_location, status)
-      values (${tenantId}, ${employeeId}::uuid, current_date, now(), ${Number.isFinite(lat) ? lat : null}, ${Number.isFinite(lng) ? lng : null}, ${location}, 'present')
+      insert into public.hr_attendance (
+        tenant_id, employee_id, work_date, punch_in_at, punch_in_latitude,
+        punch_in_longitude, punch_in_location, status, notes
+      )
+      values (${tenantId}, ${employeeId}::uuid, current_date, now(), ${lat}, ${lng}, ${location}, 'present', ${accuracyNote})
       on conflict (tenant_id, employee_id, work_date) do update
       set punch_in_at = coalesce(public.hr_attendance.punch_in_at, excluded.punch_in_at),
         punch_in_latitude = coalesce(public.hr_attendance.punch_in_latitude, excluded.punch_in_latitude),
         punch_in_longitude = coalesce(public.hr_attendance.punch_in_longitude, excluded.punch_in_longitude),
         punch_in_location = coalesce(public.hr_attendance.punch_in_location, excluded.punch_in_location),
-        status = 'present', updated_at = now()
+        total_minutes = case
+          when public.hr_attendance.punch_out_at is null then public.hr_attendance.total_minutes
+          else greatest(0, extract(epoch from (
+            public.hr_attendance.punch_out_at - coalesce(public.hr_attendance.punch_in_at, excluded.punch_in_at)
+          )) / 60)::int
+        end,
+        status = case
+          when public.hr_attendance.punch_out_at is not null
+            and public.hr_attendance.punch_out_at < coalesce(public.hr_attendance.punch_in_at, excluded.punch_in_at)
+          then 'manual_review'
+          else 'present'
+        end,
+        notes = coalesce(public.hr_attendance.notes, excluded.notes),
+        updated_at = now()
     `);
   }
   revalidatePath("/attendance/me");
