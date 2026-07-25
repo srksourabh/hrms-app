@@ -173,6 +173,13 @@ export interface ReportRow {
   summary: string | null;
 }
 
+interface ReportPeriod {
+  reportType: ReportRow["reportType"];
+  periodStart: string;
+  periodEnd: string;
+  summary: string;
+}
+
 async function execute(query: SQL): Promise<unknown[]> {
   return executeAdminSql(query);
 }
@@ -207,6 +214,39 @@ function toNullableUuid(value: FormDataEntryValue | null): string | null {
 
 function toBool(value: FormDataEntryValue | null): boolean {
   return value === "on" || value === "true" || value === "1";
+}
+
+function toDateOnly(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function reportPeriods(now = new Date()): ReportPeriod[] {
+  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const weekStart = new Date(today);
+  weekStart.setUTCDate(today.getUTCDate() - 6);
+  const monthStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
+  const monthEnd = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 0));
+
+  return [
+    {
+      reportType: "daily",
+      periodStart: toDateOnly(today),
+      periodEnd: toDateOnly(today),
+      summary: "Daily HR view: live attendance, leave, expenses, payroll, and compliance.",
+    },
+    {
+      reportType: "weekly",
+      periodStart: toDateOnly(weekStart),
+      periodEnd: toDateOnly(today),
+      summary: "Weekly HR view: live workforce activity, approvals, payroll readiness, and compliance.",
+    },
+    {
+      reportType: "monthly",
+      periodStart: toDateOnly(monthStart),
+      periodEnd: toDateOnly(monthEnd),
+      summary: "Monthly HR view: live Saudi payroll, WPS readiness, and HR compliance.",
+    },
+  ];
 }
 
 export async function getSessionUser(): Promise<SessionUser> {
@@ -443,40 +483,50 @@ export async function getCompliance(tenantId: string): Promise<ComplianceRow[]> 
 }
 
 export async function getReports(tenantId: string): Promise<ReportRow[]> {
-  return rows<ReportRow>(sql`
-    with periods as (
-      select 'daily'::text as report_type, current_date as period_start, current_date as period_end,
-        'Daily HR view: live attendance, leave, expenses, payroll, and compliance.'::text as summary
-      union all
-      select 'weekly'::text, (current_date - interval '6 days')::date, current_date,
-        'Weekly HR view: live workforce activity, approvals, payroll readiness, and compliance.'::text
-      union all
-      select 'monthly'::text, date_trunc('month', current_date)::date,
-        (date_trunc('month', current_date) + interval '1 month - 1 day')::date,
-        'Monthly HR view: live Saudi payroll, WPS readiness, and HR compliance.'::text
-    ),
-    latest_payroll as (
-      select net_pay
-      from public.hr_payroll_periods
-      where tenant_id = ${tenantId}
-      order by period_month desc
-      limit 1
-    )
+  const [overview] = await rows<{
+    headcount: number;
+    payrollNetAmount: number;
+    complianceAttentionCount: number;
+  }>(sql`
     select
-      concat(${tenantId}, '-', p.report_type, '-', p.period_start::text) as id,
-      p.report_type as "reportType",
-      p.period_start::text as "periodStart",
-      p.period_end::text as "periodEnd",
-      (select count(*)::int from public.hr_employees e where e.tenant_id = ${tenantId} and e.employment_status = 'active') as headcount,
-      (select count(distinct a.employee_id)::int from public.hr_attendance a where a.tenant_id = ${tenantId} and a.work_date between p.period_start and p.period_end and a.status = 'present') as "presentCount",
-      (select count(*)::int from public.hr_leave_requests r where r.tenant_id = ${tenantId} and r.status = 'pending' and r.start_date <= p.period_end and r.end_date >= p.period_start) as "leavePendingCount",
-      coalesce((select sum(x.amount)::float from public.hr_expenses x where x.tenant_id = ${tenantId} and x.status = 'pending' and x.expense_date between p.period_start and p.period_end), 0) as "expensePendingAmount",
-      coalesce((select net_pay::float from latest_payroll), 0) as "payrollNetAmount",
-      (select count(*)::int from public.hr_compliance_items c where c.tenant_id = ${tenantId} and c.status in ('attention','overdue','pending')) as "complianceAttentionCount",
-      p.summary
-    from periods p
-    order by case p.report_type when 'daily' then 1 when 'weekly' then 2 else 3 end
+      (select count(*)::int from public.hr_employees where tenant_id = ${tenantId} and employment_status = 'active') as headcount,
+      coalesce((select net_pay::float from public.hr_payroll_periods where tenant_id = ${tenantId} order by period_month desc limit 1), 0) as "payrollNetAmount",
+      (select count(*)::int from public.hr_compliance_items where tenant_id = ${tenantId} and status in ('attention','overdue','pending')) as "complianceAttentionCount"
   `);
+
+  const reports: ReportRow[] = [];
+
+  for (const period of reportPeriods()) {
+    const [activity] = await rows<{
+      presentCount: number;
+      leavePendingCount: number;
+      expensePendingAmount: number;
+    }>(sql`
+      select
+        (select count(distinct employee_id)::int from public.hr_attendance
+          where tenant_id = ${tenantId} and work_date between ${period.periodStart}::date and ${period.periodEnd}::date and status = 'present') as "presentCount",
+        (select count(*)::int from public.hr_leave_requests
+          where tenant_id = ${tenantId} and status = 'pending' and start_date <= ${period.periodEnd}::date and end_date >= ${period.periodStart}::date) as "leavePendingCount",
+        coalesce((select sum(amount)::float from public.hr_expenses
+          where tenant_id = ${tenantId} and status = 'pending' and expense_date between ${period.periodStart}::date and ${period.periodEnd}::date), 0) as "expensePendingAmount"
+    `);
+
+    reports.push({
+      id: `${tenantId}-${period.reportType}-${period.periodStart}`,
+      reportType: period.reportType,
+      periodStart: period.periodStart,
+      periodEnd: period.periodEnd,
+      headcount: overview?.headcount ?? 0,
+      presentCount: activity?.presentCount ?? 0,
+      leavePendingCount: activity?.leavePendingCount ?? 0,
+      expensePendingAmount: activity?.expensePendingAmount ?? 0,
+      payrollNetAmount: overview?.payrollNetAmount ?? 0,
+      complianceAttentionCount: overview?.complianceAttentionCount ?? 0,
+      summary: period.summary,
+    });
+  }
+
+  return reports;
 }
 
 export async function createEmployee(formData: FormData) {
