@@ -1,7 +1,7 @@
 import NextAuth, { type DefaultSession, type Session } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { adminDb } from '@hrms-app/db';
-import { users, tenants } from '@hrms-app/db';
+import { users } from '@hrms-app/db';
 import { compare } from 'bcryptjs';
 import { eq, sql } from 'drizzle-orm';
 import { resolveDemoIdentity } from './demo-identities';
@@ -224,19 +224,7 @@ const nextAuthResult: AuthResult = NextAuth({
         token.role = user.role;
         token.tenantId = user.tenantId;
         token.employeeId = user.employeeId;
-        const tenantId = user.tenantId;
-        if (tenantId) {
-          try {
-            const tenant = await withTransientDbRetry(() =>
-              adminDb.query.tenants.findFirst({ where: eq(tenants.id, tenantId) }),
-            );
-            token.regulatoryContext = tenant?.regulatoryContext ?? 'saudi';
-          } catch {
-            token.regulatoryContext = 'saudi';
-          }
-        } else {
-          token.regulatoryContext = 'saudi';
-        }
+        token.regulatoryContext = 'saudi';
         token.preferredLanguage = user.preferredLanguage ?? 'en';
       }
       // Subsequent requests: if the token was issued before the employeeId
