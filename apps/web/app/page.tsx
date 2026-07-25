@@ -20,10 +20,45 @@ function money(value: number) {
   return `SAR ${Math.round(value).toLocaleString("en-US")}`;
 }
 
+type DashboardData = Awaited<ReturnType<typeof getDashboardData>>;
+
+function isTransientDashboardError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /connection closed|connection terminated|econnreset|socket hang up|timeout/i.test(message);
+}
+
+function emptyDashboardData(): DashboardData {
+  return {
+    metrics: {
+      employees: 0,
+      departments: 0,
+      pendingLeave: 0,
+      pendingExpenses: 0,
+      payrollNet: 0,
+      complianceAttention: 0,
+    },
+    reports: [],
+    employees: [],
+  };
+}
+
+async function loadDashboardData(tenantId: string, attempt = 1): Promise<DashboardData> {
+  try {
+    return await getDashboardData(tenantId);
+  } catch (error) {
+    if (attempt < 3 && isTransientDashboardError(error)) {
+      await new Promise((resolve) => setTimeout(resolve, 150 * attempt));
+      return loadDashboardData(tenantId, attempt + 1);
+    }
+    console.error("[DashboardData Fallback]", error);
+    return emptyDashboardData();
+  }
+}
+
 export default async function HomePage() {
   const user = await getSessionUser();
   const tenantId = tenantIdFor(user);
-  const { metrics, reports, employees } = await getDashboardData(tenantId);
+  const { metrics, reports, employees } = await loadDashboardData(tenantId);
   const canManageEmployees = ["super_admin", "hr_manager", "hr_specialist"].includes(user.role ?? "");
   const primaryAction = canManageEmployees
     ? { href: "/employees", label: "Manage employees" }
