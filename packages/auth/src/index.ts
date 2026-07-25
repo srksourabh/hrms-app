@@ -225,10 +225,11 @@ const nextAuthResult: AuthResult = NextAuth({
         token.role = user.role;
         token.tenantId = user.tenantId;
         token.employeeId = user.employeeId;
-        if (user.tenantId) {
+        const tenantId = user.tenantId;
+        if (tenantId) {
           try {
             const tenant = await withTransientDbRetry(() =>
-              adminDb.query.tenants.findFirst({ where: eq(tenants.id, user.tenantId) }),
+              adminDb.query.tenants.findFirst({ where: eq(tenants.id, tenantId) }),
             );
             token.regulatoryContext = tenant?.regulatoryContext ?? 'saudi';
           } catch {
