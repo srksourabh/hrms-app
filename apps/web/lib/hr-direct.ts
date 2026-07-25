@@ -55,6 +55,8 @@ export interface EmployeeRow {
   housingAllowance: number;
   transportAllowance: number;
   qiwaContractStatus: string;
+  accessRole: string | null;
+  accessEmails: string | null;
 }
 
 export interface LocationRow {
@@ -215,6 +217,19 @@ function requireHr(user: SessionUser): void {
   }
 }
 
+function requirePeopleAdmin(user: SessionUser): void {
+  const allowed = new Set(["super_admin", "hr_manager", "hr_specialist"]);
+  if (!allowed.has(user.role ?? "")) {
+    throw new Error("Only Admin and HR can change employee records.");
+  }
+}
+
+function requireAdmin(user: SessionUser): void {
+  if (user.role !== "super_admin") {
+    throw new Error("Only Admin can promote employees or change login roles.");
+  }
+}
+
 export async function getDashboardData(tenantId: string) {
   const [metrics] = await rows<{
     employees: number;
@@ -270,12 +285,29 @@ export async function getEmployees(tenantId: string): Promise<EmployeeRow[]> {
       g.title as "designationTitle", e.manager_employee_id as "managerEmployeeId", m.full_name as "managerName",
       l.name as "locationName", e.employment_status as "employmentStatus", e.base_salary::float as "baseSalary",
       e.housing_allowance::float as "housingAllowance", e.transport_allowance::float as "transportAllowance",
-      e.qiwa_contract_status as "qiwaContractStatus"
+      e.qiwa_contract_status as "qiwaContractStatus",
+      access.access_role as "accessRole",
+      access.access_emails as "accessEmails"
     from public.hr_employees e
     left join public.hr_departments d on d.id = e.department_id
     left join public.hr_designations g on g.id = e.designation_id
     left join public.hr_employees m on m.id = e.manager_employee_id
     left join public.hr_locations l on l.id = e.work_location_id
+    left join lateral (
+      select
+        (array_agg(u.role order by case u.role
+          when 'super_admin' then 1
+          when 'hr_manager' then 2
+          when 'hr_specialist' then 3
+          when 'payroll_admin' then 4
+          when 'department_manager' then 5
+          when 'employee' then 6
+          else 99
+        end, u.email))[1] as access_role,
+        string_agg(u.email, ', ' order by u.email) as access_emails
+      from public.users u
+      where u.tenant_id = e.tenant_id and u.employee_id = e.id
+    ) access on true
     where e.tenant_id = ${tenantId}
     order by e.employee_code
   `);
@@ -416,7 +448,7 @@ export async function getReports(tenantId: string): Promise<ReportRow[]> {
 export async function createEmployee(formData: FormData) {
   "use server";
   const user = await getSessionUser();
-  requireHr(user);
+  requirePeopleAdmin(user);
   const tenantId = tenantIdFor(user);
   await adminDb.execute(sql`
     insert into public.hr_employees (
@@ -440,7 +472,7 @@ export async function createEmployee(formData: FormData) {
 export async function updateEmployee(formData: FormData) {
   "use server";
   const user = await getSessionUser();
-  requireHr(user);
+  requirePeopleAdmin(user);
   const tenantId = tenantIdFor(user);
   await adminDb.execute(sql`
     update public.hr_employees
@@ -464,11 +496,77 @@ export async function updateEmployee(formData: FormData) {
 export async function deleteEmployee(formData: FormData) {
   "use server";
   const user = await getSessionUser();
-  requireHr(user);
+  requirePeopleAdmin(user);
   const tenantId = tenantIdFor(user);
   const id = toText(formData.get("id"));
   await adminDb.execute(sql`update public.users set employee_id = null where employee_id = ${id}::uuid`);
   await adminDb.execute(sql`delete from public.hr_employees where tenant_id = ${tenantId} and id = ${id}::uuid`);
+  revalidatePath("/employees");
+  revalidatePath("/");
+}
+
+export async function updateEmployeeAccessRole(formData: FormData) {
+  "use server";
+  const user = await getSessionUser();
+  requireAdmin(user);
+  const tenantId = tenantIdFor(user);
+  const employeeId = toText(formData.get("employeeId"));
+  const nextRole = toText(formData.get("role"), "employee");
+  const allowedRoles = new Set([
+    "super_admin",
+    "hr_manager",
+    "hr_specialist",
+    "payroll_admin",
+    "department_manager",
+    "employee",
+  ]);
+  if (!allowedRoles.has(nextRole)) throw new Error("Unsupported employee login role.");
+
+  const [employee] = await rows<{
+    id: string;
+    email: string;
+    fullName: string;
+  }>(sql`
+    select id, email, full_name as "fullName"
+    from public.hr_employees
+    where tenant_id = ${tenantId} and id = ${employeeId}::uuid
+    limit 1
+  `);
+  if (!employee) throw new Error("Employee not found.");
+
+  await adminDb.execute(sql`
+    update public.users
+    set role = ${nextRole}, updated_at = now()
+    where tenant_id = ${tenantId}
+      and employee_id = ${employeeId}::uuid
+      and (${nextRole} = 'super_admin' or role <> 'super_admin')
+  `);
+
+  await adminDb.execute(sql`
+    insert into public.users (
+      tenant_id, email, password_hash, name, role, employee_id, preferred_language,
+      email_verified, created_at, updated_at
+    )
+    select ${tenantId}::uuid, ${employee.email}, source.password_hash, ${employee.fullName}, ${nextRole},
+      ${employee.id}::uuid, 'en', now(), now(), now()
+    from (
+      select password_hash
+      from public.users
+      where tenant_id = ${tenantId} and password_hash is not null
+      order by case when email = 'admin@rukn-energy.example' then 0 else 1 end, created_at
+      limit 1
+    ) source
+    where not exists (
+      select 1 from public.users
+      where tenant_id = ${tenantId} and employee_id = ${employee.id}::uuid
+    )
+    on conflict (email) do update set
+      role = excluded.role,
+      employee_id = excluded.employee_id,
+      name = excluded.name,
+      updated_at = now()
+  `);
+
   revalidatePath("/employees");
   revalidatePath("/");
 }
