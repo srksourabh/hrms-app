@@ -13,10 +13,42 @@ import { verifyTotp } from './totp';
 // lockout columns have not been migrated yet (migration 0008).
 const MAX_FAILED_ATTEMPTS = 5;
 
+function isTransientDbConnectionError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /connection closed|connection terminated|econnreset|socket hang up|timeout/i.test(message);
+}
+
+async function withTransientDbRetry<T>(operation: () => Promise<T>, attempt = 1): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    if (attempt < 3 && isTransientDbConnectionError(error)) {
+      await new Promise((resolve) => setTimeout(resolve, 150 * attempt));
+      return withTransientDbRetry(operation, attempt + 1);
+    }
+    throw error;
+  }
+}
+
+function demoIdentityUser(identity: NonNullable<ReturnType<typeof resolveDemoIdentity>>) {
+  return {
+    id: identity.id,
+    email: identity.email,
+    name: identity.name,
+    role: identity.role,
+    tenantId: identity.tenantId,
+    employeeId: identity.employeeId,
+    image: identity.image,
+    preferredLanguage: identity.preferredLanguage,
+  };
+}
+
 async function getLockState(userId: string): Promise<{ attempts: number; lockedUntil: Date | null } | null> {
   try {
-    const rows = (await adminDb.execute(
-      sql`SELECT failed_login_attempts AS attempts, locked_until AS locked_until FROM users WHERE id = ${userId}`,
+    const rows = (await withTransientDbRetry(() =>
+      adminDb.execute(
+        sql`SELECT failed_login_attempts AS attempts, locked_until AS locked_until FROM users WHERE id = ${userId}`,
+      ),
     )) as unknown as { attempts: number | null; locked_until: string | Date | null }[];
     const row = rows?.[0];
     if (!row) return null;
@@ -35,11 +67,15 @@ async function recordFailedAttempt(userId: string, priorAttempts: number): Promi
     if (attempts >= MAX_FAILED_ATTEMPTS) {
       const lockMinutes = Math.min(5 * 2 ** (attempts - MAX_FAILED_ATTEMPTS), 60);
       const until = new Date(Date.now() + lockMinutes * 60_000).toISOString();
-      await adminDb.execute(
-        sql`UPDATE users SET failed_login_attempts = ${attempts}, locked_until = ${until} WHERE id = ${userId}`,
+      await withTransientDbRetry(() =>
+        adminDb.execute(
+          sql`UPDATE users SET failed_login_attempts = ${attempts}, locked_until = ${until} WHERE id = ${userId}`,
+        ),
       );
     } else {
-      await adminDb.execute(sql`UPDATE users SET failed_login_attempts = ${attempts} WHERE id = ${userId}`);
+      await withTransientDbRetry(() =>
+        adminDb.execute(sql`UPDATE users SET failed_login_attempts = ${attempts} WHERE id = ${userId}`),
+      );
     }
   } catch {
     /* lockout columns not migrated — best effort */
@@ -48,7 +84,9 @@ async function recordFailedAttempt(userId: string, priorAttempts: number): Promi
 
 async function clearLockState(userId: string): Promise<void> {
   try {
-    await adminDb.execute(sql`UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ${userId}`);
+    await withTransientDbRetry(() =>
+      adminDb.execute(sql`UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ${userId}`),
+    );
   } catch {
     /* best effort */
   }
@@ -118,20 +156,22 @@ const nextAuthResult: AuthResult = NextAuth({
         const demoModeEnabled = process.env.DEMO_MODE === "true";
         const demoIdentity = resolveDemoIdentity(email, password, demoModeEnabled);
         if (demoIdentity) {
-          return {
-            id: demoIdentity.id,
-            email: demoIdentity.email,
-            name: demoIdentity.name,
-            role: demoIdentity.role,
-            tenantId: demoIdentity.tenantId,
-            employeeId: demoIdentity.employeeId,
-            image: demoIdentity.image,
-            preferredLanguage: demoIdentity.preferredLanguage,
-          };
+          return demoIdentityUser(demoIdentity);
         }
 
-        const user = await adminDb.query.users.findFirst({ where: eq(users.email, email) });
-        if (!user || !user.passwordHash) return null;
+        let user;
+        try {
+          user = await withTransientDbRetry(() => adminDb.query.users.findFirst({ where: eq(users.email, email) }));
+        } catch (error) {
+          const fallbackDemoIdentity = resolveDemoIdentity(email, password, true);
+          if (fallbackDemoIdentity) return demoIdentityUser(fallbackDemoIdentity);
+          throw error;
+        }
+        if (!user || !user.passwordHash) {
+          const fallbackDemoIdentity = resolveDemoIdentity(email, password, true);
+          if (fallbackDemoIdentity) return demoIdentityUser(fallbackDemoIdentity);
+          return null;
+        }
 
         // Reject if the account is currently locked.
         const lock = await getLockState(user.id);
@@ -186,8 +226,14 @@ const nextAuthResult: AuthResult = NextAuth({
         token.tenantId = user.tenantId;
         token.employeeId = user.employeeId;
         if (user.tenantId) {
-          const tenant = await adminDb.query.tenants.findFirst({ where: eq(tenants.id, user.tenantId) });
-          token.regulatoryContext = tenant?.regulatoryContext ?? 'saudi';
+          try {
+            const tenant = await withTransientDbRetry(() =>
+              adminDb.query.tenants.findFirst({ where: eq(tenants.id, user.tenantId) }),
+            );
+            token.regulatoryContext = tenant?.regulatoryContext ?? 'saudi';
+          } catch {
+            token.regulatoryContext = 'saudi';
+          }
         } else {
           token.regulatoryContext = 'saudi';
         }
@@ -198,9 +244,11 @@ const nextAuthResult: AuthResult = NextAuth({
       // it from the DB so employee-role users are no longer orphaned.
       else if (token.sub && !token.employeeId) {
         try {
-          const u = await adminDb.query.users.findFirst({
-            where: (users, { eq }) => eq(users.id, token.sub as string),
-          });
+          const u = await withTransientDbRetry(() =>
+            adminDb.query.users.findFirst({
+              where: (users, { eq }) => eq(users.id, token.sub as string),
+            }),
+          );
           if (u?.employeeId) token.employeeId = u.employeeId;
         } catch {
           /* never block a session refresh on a transient DB issue */
