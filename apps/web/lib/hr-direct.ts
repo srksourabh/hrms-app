@@ -444,13 +444,38 @@ export async function getCompliance(tenantId: string): Promise<ComplianceRow[]> 
 
 export async function getReports(tenantId: string): Promise<ReportRow[]> {
   return rows<ReportRow>(sql`
-    select id, report_type as "reportType", period_start::text as "periodStart", period_end::text as "periodEnd",
-      headcount, present_count as "presentCount", leave_pending_count as "leavePendingCount",
-      expense_pending_amount::float as "expensePendingAmount", payroll_net_amount::float as "payrollNetAmount",
-      compliance_attention_count as "complianceAttentionCount", summary
-    from public.hr_report_snapshots
-    where tenant_id = ${tenantId}
-    order by case report_type when 'daily' then 1 when 'weekly' then 2 else 3 end
+    with periods as (
+      select 'daily'::text as report_type, current_date as period_start, current_date as period_end,
+        'Daily HR view: live attendance, leave, expenses, payroll, and compliance.'::text as summary
+      union all
+      select 'weekly'::text, (current_date - interval '6 days')::date, current_date,
+        'Weekly HR view: live workforce activity, approvals, payroll readiness, and compliance.'::text
+      union all
+      select 'monthly'::text, date_trunc('month', current_date)::date,
+        (date_trunc('month', current_date) + interval '1 month - 1 day')::date,
+        'Monthly HR view: live Saudi payroll, WPS readiness, and HR compliance.'::text
+    ),
+    latest_payroll as (
+      select net_pay
+      from public.hr_payroll_periods
+      where tenant_id = ${tenantId}
+      order by period_month desc
+      limit 1
+    )
+    select
+      concat(${tenantId}, '-', p.report_type, '-', p.period_start::text) as id,
+      p.report_type as "reportType",
+      p.period_start::text as "periodStart",
+      p.period_end::text as "periodEnd",
+      (select count(*)::int from public.hr_employees e where e.tenant_id = ${tenantId} and e.employment_status = 'active') as headcount,
+      (select count(distinct a.employee_id)::int from public.hr_attendance a where a.tenant_id = ${tenantId} and a.work_date between p.period_start and p.period_end and a.status = 'present') as "presentCount",
+      (select count(*)::int from public.hr_leave_requests r where r.tenant_id = ${tenantId} and r.status = 'pending' and r.start_date <= p.period_end and r.end_date >= p.period_start) as "leavePendingCount",
+      coalesce((select sum(x.amount)::float from public.hr_expenses x where x.tenant_id = ${tenantId} and x.status = 'pending' and x.expense_date between p.period_start and p.period_end), 0) as "expensePendingAmount",
+      coalesce((select net_pay::float from latest_payroll), 0) as "payrollNetAmount",
+      (select count(*)::int from public.hr_compliance_items c where c.tenant_id = ${tenantId} and c.status in ('attention','overdue','pending')) as "complianceAttentionCount",
+      p.summary
+    from periods p
+    order by case p.report_type when 'daily' then 1 when 'weekly' then 2 else 3 end
   `);
 }
 
