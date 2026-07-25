@@ -22,8 +22,6 @@ const SIMPLIFIED_HR_ROUTES = [
 ] as const;
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-// Bound the per-instance store (API-007): sweep expired entries once the cap is
-// hit, then drop oldest-inserted keys if churn (e.g. spoofed IPs) outpaces expiry.
 const RATE_LIMIT_MAX_ENTRIES = 10_000;
 
 function evictRateLimitEntries(now: number): void {
@@ -51,9 +49,7 @@ function checkRateLimit(key: string, maxRequests: number, windowMs: number): boo
   return true;
 }
 
-const CSRF_PROTECTED_PREFIXES: string[] = [];
-
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const ip = request.headers.get("x-forwarded-for") ?? request.headers.get("x-real-ip") ?? "unknown";
   const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
@@ -66,54 +62,6 @@ export async function proxy(request: NextRequest) {
     });
   }
 
-  // Same-origin (CSRF) check for state-changing requests to custom API routes
-  // that don't carry NextAuth's built-in CSRF token (F2 / SEC-004).
-  const method = request.method.toUpperCase();
-  if (
-    (method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE") &&
-    CSRF_PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))
-  ) {
-    const origin = request.headers.get("origin");
-    const host = request.headers.get("host");
-    if (origin) {
-      try {
-        if (new URL(origin).host !== host) {
-          return new NextResponse(JSON.stringify({ error: "Cross-origin request rejected" }), {
-            status: 403,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-      } catch {
-        return new NextResponse(JSON.stringify({ error: "Invalid origin" }), { status: 403 });
-      }
-    } else {
-      // Fail closed when Origin is absent (API-007): fall back to Referer and
-      // reject requests carrying neither.
-      const referer = request.headers.get("referer");
-      let refererHost: string | null = null;
-      try {
-        refererHost = referer ? new URL(referer).host : null;
-      } catch {
-        refererHost = null;
-      }
-      if (!refererHost || refererHost !== host) {
-        return new NextResponse(JSON.stringify({ error: "Cross-origin request rejected" }), {
-          status: 403,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-    }
-    // Rate-limit these sensitive endpoints (30/min/IP).
-    if (!checkRateLimit(`custom:${ip}`, 30, 60_000)) {
-      return new NextResponse(JSON.stringify({ error: "Too many requests" }), {
-        status: 429,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-  }
-
-  // Tight limit on credential login attempts (brute-force front line, C2).
-  // Complemented by durable per-account lockout in the authorize() callback.
   const isLoginAttempt = pathname.startsWith("/api/auth/callback/credentials");
   if (isLoginAttempt && !checkRateLimit(`login:${ip}`, 5, 60_000)) {
     return new NextResponse(JSON.stringify({ error: "Too many login attempts. Please wait a minute and try again." }), {
