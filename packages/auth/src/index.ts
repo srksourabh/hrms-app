@@ -152,7 +152,8 @@ const nextAuthResult: AuthResult = NextAuth({
         // secret, so accounts without MFA are unaffected. A wrong/missing code
         // does not count toward lockout (the password was correct).
         if (user.mfaSecret) {
-          const totp = typeof credentials.totp === 'string' ? credentials.totp : '';
+          const totpValue = (credentials as Record<string, unknown>).totp;
+          const totp = typeof totpValue === 'string' ? totpValue : '';
           if (!verifyTotp(user.mfaSecret, totp)) {
             console.warn('[auth] MFA verification failed for user', user.id);
             return null;
