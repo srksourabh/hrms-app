@@ -9,6 +9,7 @@ const SIMPLIFIED_HR_ROUTES = [
   "/",
   "/employees",
   "/departments",
+  "/departments/organogram",
   "/designations",
   "/attendance/me",
   "/attendance/portal",

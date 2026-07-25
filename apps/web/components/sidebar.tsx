@@ -36,7 +36,7 @@ const navItems: Array<{ href: string; label: string; icon: NavIcon; employee?: b
   { href: "/employees", label: "Employees", icon: Users },
   { href: "/departments", label: "Departments", icon: Building2 },
   { href: "/designations", label: "Designations", icon: BriefcaseBusiness },
-  { href: "/departments/organogram", label: "Organogram", icon: GitBranch },
+  { href: "/departments/organogram", label: "Organogram", icon: GitBranch, employee: true },
   { href: "/attendance/me", label: "Punch in/out", icon: MapPin, employee: true },
   { href: "/attendance/portal", label: "Attendance portal", icon: CalendarCheck },
   { href: "/attendance/reports", label: "Attendance reports", icon: BarChart3 },

@@ -574,7 +574,7 @@ export async function updateEmployeeAccessRole(formData: FormData) {
 export async function createDepartment(formData: FormData) {
   "use server";
   const user = await getSessionUser();
-  requireHr(user);
+  requirePeopleAdmin(user);
   const tenantId = tenantIdFor(user);
   await adminDb.execute(sql`
     insert into public.hr_departments (tenant_id, name, name_ar, code, manager_employee_id, cost_center, location_city)
@@ -588,7 +588,7 @@ export async function createDepartment(formData: FormData) {
 export async function updateDepartment(formData: FormData) {
   "use server";
   const user = await getSessionUser();
-  requireHr(user);
+  requirePeopleAdmin(user);
   const tenantId = tenantIdFor(user);
   await adminDb.execute(sql`
     update public.hr_departments
@@ -604,7 +604,7 @@ export async function updateDepartment(formData: FormData) {
 export async function deleteDepartment(formData: FormData) {
   "use server";
   const user = await getSessionUser();
-  requireHr(user);
+  requirePeopleAdmin(user);
   const tenantId = tenantIdFor(user);
   await adminDb.execute(sql`delete from public.hr_departments where tenant_id = ${tenantId} and id = ${toText(formData.get("id"))}::uuid`);
   revalidatePath("/departments");
@@ -613,7 +613,7 @@ export async function deleteDepartment(formData: FormData) {
 export async function createDesignation(formData: FormData) {
   "use server";
   const user = await getSessionUser();
-  requireHr(user);
+  requirePeopleAdmin(user);
   const tenantId = tenantIdFor(user);
   await adminDb.execute(sql`
     insert into public.hr_designations (tenant_id, department_id, title, title_ar, grade, min_salary, max_salary, is_managerial)
@@ -627,7 +627,7 @@ export async function createDesignation(formData: FormData) {
 export async function updateDesignation(formData: FormData) {
   "use server";
   const user = await getSessionUser();
-  requireHr(user);
+  requirePeopleAdmin(user);
   const tenantId = tenantIdFor(user);
   await adminDb.execute(sql`
     update public.hr_designations
@@ -644,7 +644,7 @@ export async function updateDesignation(formData: FormData) {
 export async function deleteDesignation(formData: FormData) {
   "use server";
   const user = await getSessionUser();
-  requireHr(user);
+  requirePeopleAdmin(user);
   const tenantId = tenantIdFor(user);
   await adminDb.execute(sql`delete from public.hr_designations where tenant_id = ${tenantId} and id = ${toText(formData.get("id"))}::uuid`);
   revalidatePath("/designations");

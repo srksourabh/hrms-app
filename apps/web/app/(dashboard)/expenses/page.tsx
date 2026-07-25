@@ -8,6 +8,7 @@ export default async function ExpensesPage() {
   const user = await getSessionUser();
   const tenantId = tenantIdFor(user);
   const isEmployee = user.role === "employee";
+  const selectedEmployeeId = user.employeeId || undefined;
   const [employees, expenses] = await Promise.all([
     getEmployees(tenantId),
     getExpenses(tenantId, isEmployee ? user.employeeId : null),
@@ -20,7 +21,7 @@ export default async function ExpensesPage() {
       <section className="rounded-lg border border-slate-200 bg-white p-5">
         <h2 className="text-lg font-semibold text-slate-950">New expense application</h2>
         <form action={createExpense} className="mt-4 grid gap-3 md:grid-cols-6">
-          {!isEmployee && <Field label="Employee"><select name="employeeId" className={selectClass}>{employees.map((e) => <option key={e.id} value={e.id}>{e.fullName}</option>)}</select></Field>}
+          {!isEmployee && <Field label="Employee"><select name="employeeId" className={selectClass} defaultValue={selectedEmployeeId}>{employees.map((e) => <option key={e.id} value={e.id}>{e.fullName}</option>)}</select></Field>}
           <Field label="Date"><input name="expenseDate" type="date" className={inputClass} defaultValue={new Date().toISOString().slice(0, 10)} /></Field>
           <Field label="Category"><select name="category" className={selectClass}>{categories.map((category) => <option key={category} value={category}>{category.replace("_", " ")}</option>)}</select></Field>
           <Field label="Amount"><input name="amount" type="number" step="0.01" required className={inputClass} /></Field>

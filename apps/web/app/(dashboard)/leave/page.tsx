@@ -14,6 +14,7 @@ export default async function LeavePage() {
   const user = await getSessionUser();
   const tenantId = tenantIdFor(user);
   const isEmployee = user.role === "employee";
+  const selectedEmployeeId = user.employeeId || undefined;
   const [employees, leaveTypes, requests] = await Promise.all([
     getEmployees(tenantId),
     getLeaveTypes(tenantId),
@@ -29,7 +30,7 @@ export default async function LeavePage() {
         <form action={createLeaveRequest} className="mt-4 grid gap-3 md:grid-cols-6">
           {!isEmployee && (
             <Field label="Employee">
-              <select name="employeeId" className={selectClass}>
+              <select name="employeeId" className={selectClass} defaultValue={selectedEmployeeId}>
                 {employees.map((e) => <option key={e.id} value={e.id}>{e.fullName}</option>)}
               </select>
             </Field>
