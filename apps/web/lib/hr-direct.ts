@@ -209,7 +209,7 @@ export function tenantIdFor(user: SessionUser): string {
 }
 
 function requireHr(user: SessionUser): void {
-  const allowed = new Set(["hr_manager", "hr_specialist", "payroll_admin", "department_manager"]);
+  const allowed = new Set(["super_admin", "hr_manager", "hr_specialist", "payroll_admin", "department_manager"]);
   if (!allowed.has(user.role ?? "")) {
     throw new Error("Only HR and manager roles can change company HR records.");
   }
@@ -556,7 +556,7 @@ export async function punchAttendance(formData: FormData) {
   "use server";
   const user = await getSessionUser();
   const tenantId = tenantIdFor(user);
-  const canPunchForOthers = ["hr_manager", "hr_specialist", "department_manager"].includes(user.role ?? "");
+  const canPunchForOthers = ["super_admin", "hr_manager", "hr_specialist", "department_manager"].includes(user.role ?? "");
   const employeeId = canPunchForOthers
     ? toText(formData.get("employeeId"), user.employeeId ?? "")
     : user.employeeId ?? "";

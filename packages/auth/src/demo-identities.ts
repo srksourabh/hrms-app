@@ -3,60 +3,70 @@ export interface DemoIdentity {
   email: string;
   password: string;
   name: string;
-  role: "hr_manager" | "hr_specialist" | "department_manager" | "employee";
+  role: "super_admin" | "hr_manager" | "department_manager" | "employee";
   employeeId: string;
-  /** Links to public.tenants.id — Rukn Energy Services */
+  /** Links to public.tenants.id - Rukn Energy Services */
   tenantId: string;
   image: string;
   preferredLanguage: "en" | "ar";
 }
 
 /** Rukn Energy Services tenant ID (must match public.tenants.id + seed data) */
-export const RUKN_TENANT_ID = "1ed8b6bd-3743-5000-8000-000000000001";
+export const RUKN_TENANT_ID = "11111111-1111-4111-8111-111111111111";
 
 export const demoIdentities = {
   admin: {
     id: "demo-admin",
-    email: "admin@saudi-hrms.example",
-    password: "SaudiHRMSDemo@2026",
+    email: "admin@rukn-energy.example",
+    password: "Rukn2026!",
+    name: "Reem Al-Harbi",
+    role: "super_admin",
+    // Real employee row in the Rukn Energy tenant schema.
+    employeeId: "dddddddd-0000-4000-8000-000000000001",
+    tenantId: RUKN_TENANT_ID,
+    image: "",
+    preferredLanguage: "en",
+  },
+  hrManager: {
+    id: "demo-hr-manager",
+    email: "hr.manager@rukn-energy.example",
+    password: "Rukn2026!",
     name: "Reem Al-Harbi",
     role: "hr_manager",
-    // Real employee row in the Rukn Energy tenant schema (attendance/timesheet
-    // and profile read live DB data, so this must reference an existing row).
-    employeeId: "70c6e56a-6f3c-57e1-88e8-b6aa81f44941",
+    employeeId: "dddddddd-0000-4000-8000-000000000001",
     tenantId: RUKN_TENANT_ID,
     image: "",
     preferredLanguage: "en",
   },
-  hrSpecialist: {
-    id: "demo-hr-specialist",
-    email: "specialist@saudi-hrms.example",
-    password: "SaudiHRMSDemo@2026",
-    name: "Aisha Al-Otaibi",
-    role: "hr_specialist",
-    employeeId: "ea1c81d1-7231-52de-8c35-feb24ba88fd5",
-    tenantId: RUKN_TENANT_ID,
-    image: "",
-    preferredLanguage: "en",
-  },
-  departmentManager: {
-    id: "demo-department-manager",
-    email: "manager@saudi-hrms.example",
-    password: "SaudiHRMSDemo@2026",
+  projectManager: {
+    id: "demo-project-manager",
+    email: "project.manager@rukn-energy.example",
+    password: "Rukn2026!",
     name: "Fahad Al-Qahtani",
     role: "department_manager",
-    employeeId: "0c3b4817-a265-5d61-87e9-abcc6518ff4a",
+    employeeId: "dddddddd-0000-4000-8000-000000000003",
     tenantId: RUKN_TENANT_ID,
     image: "",
     preferredLanguage: "en",
   },
-  employee: {
-    id: "demo-employee",
-    email: "employee@saudi-hrms.example",
-    password: "SaudiHRMSDemo@2026",
+  employee1: {
+    id: "demo-employee-1",
+    email: "employee1@rukn-energy.example",
+    password: "Rukn2026!",
     name: "Omar Nasser Al-Dossary",
     role: "employee",
-    employeeId: "41f58f2a-f94f-5bf3-8b05-76aaf4b89190",
+    employeeId: "dddddddd-0000-4000-8000-000000000004",
+    tenantId: RUKN_TENANT_ID,
+    image: "",
+    preferredLanguage: "en",
+  },
+  employee2: {
+    id: "demo-employee-2",
+    email: "employee2@rukn-energy.example",
+    password: "Rukn2026!",
+    name: "Priya Menon",
+    role: "employee",
+    employeeId: "dddddddd-0000-4000-8000-000000000005",
     tenantId: RUKN_TENANT_ID,
     image: "",
     preferredLanguage: "en",

@@ -109,7 +109,6 @@ const nextAuthResult: AuthResult = NextAuth({
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
-        totp: { label: 'Authenticator code', type: 'text' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;

@@ -1,38 +1,40 @@
 import { describe, expect, it } from "vitest";
 import { demoIdentities, resolveDemoIdentity } from "../demo-identities";
 
-describe("Taāzur demo identities", () => {
-  it("provides four distinct operational role identities", () => {
+describe("Tazur demo identities", () => {
+  it("provides five distinct operational role identities", () => {
     expect(Object.values(demoIdentities).map((identity) => identity.role)).toEqual([
+      "super_admin",
       "hr_manager",
-      "hr_specialist",
       "department_manager",
       "employee",
+      "employee",
     ]);
-    expect(new Set(Object.values(demoIdentities).map((identity) => identity.email)).size).toBe(4);
-    // Demo logins map to real employee rows in the Rukn Energy tenant so
-    // attendance/timesheet and profile read live data.
-    expect(demoIdentities.hrSpecialist.employeeId).toBe("ea1c81d1-7231-52de-8c35-feb24ba88fd5");
-    expect(demoIdentities.departmentManager.employeeId).toBe("0c3b4817-a265-5d61-87e9-abcc6518ff4a");
+    expect(new Set(Object.values(demoIdentities).map((identity) => identity.email)).size).toBe(5);
+    expect(demoIdentities.hrManager.employeeId).toBe("dddddddd-0000-4000-8000-000000000001");
+    expect(demoIdentities.projectManager.employeeId).toBe("dddddddd-0000-4000-8000-000000000003");
   });
 
   it("resolves valid credentials only when demo mode is enabled", () => {
     expect(
       resolveDemoIdentity(demoIdentities.admin.email, demoIdentities.admin.password, true),
+    ).toMatchObject({ role: "super_admin" });
+    expect(
+      resolveDemoIdentity(demoIdentities.hrManager.email, demoIdentities.hrManager.password, true),
     ).toMatchObject({ role: "hr_manager" });
     expect(
-      resolveDemoIdentity(demoIdentities.employee.email, demoIdentities.employee.password, true),
+      resolveDemoIdentity(demoIdentities.projectManager.email, demoIdentities.projectManager.password, true),
+    ).toMatchObject({ role: "department_manager" });
+    expect(
+      resolveDemoIdentity(demoIdentities.employee1.email, demoIdentities.employee1.password, true),
     ).toMatchObject({ role: "employee" });
     expect(
-      resolveDemoIdentity(demoIdentities.hrSpecialist.email, demoIdentities.hrSpecialist.password, true),
-    ).toMatchObject({ role: "hr_specialist" });
-    expect(
-      resolveDemoIdentity(demoIdentities.departmentManager.email, demoIdentities.departmentManager.password, true),
-    ).toMatchObject({ role: "department_manager" });
+      resolveDemoIdentity(demoIdentities.employee2.email, demoIdentities.employee2.password, true),
+    ).toMatchObject({ role: "employee" });
     expect(resolveDemoIdentity(demoIdentities.admin.email, demoIdentities.admin.password, false)).toBeNull();
   });
 
   it("rejects a wrong password", () => {
-    expect(resolveDemoIdentity(demoIdentities.employee.email, "wrong", true)).toBeNull();
+    expect(resolveDemoIdentity(demoIdentities.employee1.email, "wrong", true)).toBeNull();
   });
 });

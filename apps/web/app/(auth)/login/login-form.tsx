@@ -9,10 +9,11 @@ import { BrandMark } from "~/components/brand/brand-lockup";
 const SAMPLE_PASSWORD = "Rukn2026!";
 
 const SAMPLE_USERS = [
-  { role: "HR Manager", email: "reem.alharbi@rukn-energy.example" },
-  { role: "HR Specialist", email: "aisha.alotaibi@rukn-energy.example" },
-  { role: "Department Manager", email: "fahad.alqahtani@rukn-energy.example" },
-  { role: "Employee", email: "omar.aldossary@rukn-energy.example" },
+  { role: "Admin", email: "admin@rukn-energy.example" },
+  { role: "HR Manager", email: "hr.manager@rukn-energy.example" },
+  { role: "Project Manager", email: "project.manager@rukn-energy.example" },
+  { role: "Employee 1", email: "employee1@rukn-energy.example" },
+  { role: "Employee 2", email: "employee2@rukn-energy.example" },
 ];
 
 export function LoginForm() {
