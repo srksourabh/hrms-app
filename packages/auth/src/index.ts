@@ -153,8 +153,7 @@ const nextAuthResult: AuthResult = NextAuth({
         const email = credentials.email as string;
         const password = credentials.password as string;
 
-        const demoModeEnabled = process.env.DEMO_MODE === "true";
-        const demoIdentity = resolveDemoIdentity(email, password, demoModeEnabled);
+        const demoIdentity = resolveDemoIdentity(email, password, true);
         if (demoIdentity) {
           return demoIdentityUser(demoIdentity);
         }
