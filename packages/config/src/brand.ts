@@ -9,19 +9,15 @@ export interface BrandConfig {
 }
 
 export const taazurBrand: BrandConfig = {
-  name: "Taāzur",
-  nameAr: "تآزر",
-  attribution: "powered by UDS-Noon JV",
-  tagline: "Saudi people operations, working as one",
-  taglineAr: "عمليات الموارد البشرية السعودية بتناغم واحد",
+  name: "Saudi HRMS Portal",
+  nameAr: "بوابة الموارد البشرية السعودية",
+  attribution: "Saudi Arabian company HRMS",
+  tagline: "Field-ready HR, payroll, and compliance for Saudi Arabia",
+  taglineAr: "إدارة الموارد البشرية والرواتب والامتثال في السعودية",
   logoUrl: "/brand/taazur-mark.svg",
   accent: "#0B5D46",
 };
 
-/**
- * Resolves a deploy-time white-label brand without requiring source changes.
- * A future tenant settings record can pass the same override shape at runtime.
- */
 export function resolveBrand(overrides: Partial<BrandConfig> = {}): BrandConfig {
   return {
     ...taazurBrand,

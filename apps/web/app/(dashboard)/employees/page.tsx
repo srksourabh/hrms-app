@@ -1,300 +1,111 @@
-"use client";
+import { DashboardShell } from "~/components/dashboard-shell";
+import { Field, inputClass, PageTitle, selectClass, SubmitButton } from "~/components/hr/ui";
+import {
+  createEmployee,
+  deleteEmployee,
+  getDepartments,
+  getDesignations,
+  getEmployees,
+  getSessionUser,
+  tenantIdFor,
+  updateEmployee,
+} from "~/lib/hr-direct";
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Button, Input, Card, CardHeader, CardContent, Badge, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@hrms-app/ui";
-import { api } from "~/trpc/react";
-import { Download, Plus, Search, Upload } from "lucide-react";
-
-const statusColors: Record<string, "default" | "destructive" | "secondary" | "outline"> = {
-  active: "default",
-  terminated: "destructive",
-  suspended: "secondary",
-  on_leave: "outline",
-};
-
-const customColors: Record<string, string> = {
-  active: "bg-green-100 text-green-800 border-green-200",
-  on_leave: "bg-blue-100 text-blue-800 border-blue-200",
-};
-
-const employeeCsvHeaders = [
-  "fullName",
-  "nationality",
-  "hireDate",
-  "departmentName",
-  "designationTitle",
-  "managerFullName",
-  "jobTitle",
-  "gosiSystem",
-  "iqamaNumberEnc",
-  "salaryBasic",
-  "salaryHousing",
-  "salaryTransport",
-];
-
-type ParsedEmployeeCsvRow = {
-  fullName: string;
-  nationality: "saudi" | "expat";
-  hireDate: string;
-  departmentName?: string;
-  designationTitle?: string;
-  managerFullName?: string;
-  jobTitle?: string;
-  gosiSystem?: "old" | "new";
-  iqamaNumberEnc?: string;
-  salaryBasic: number;
-  salaryHousing: number;
-  salaryTransport: number;
-};
-
-function splitCsvLine(line: string): string[] {
-  const cells: string[] = [];
-  let current = "";
-  let quoted = false;
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    const next = line[i + 1];
-    if (char === '"' && quoted && next === '"') {
-      current += '"';
-      i++;
-    } else if (char === '"') {
-      quoted = !quoted;
-    } else if (char === "," && !quoted) {
-      cells.push(current.trim());
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-  cells.push(current.trim());
-  return cells;
-}
-
-function parseEmployeeCsv(text: string): ParsedEmployeeCsvRow[] {
-  const lines = text
-    .replace(/^\uFEFF/, "")
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-  if (lines.length < 2) throw new Error("CSV must include a header row and at least one employee row.");
-  const headerLine = lines[0];
-  if (!headerLine) throw new Error("CSV header row is missing.");
-  const headers = splitCsvLine(headerLine).map((header) => header.trim());
-  const missing = employeeCsvHeaders.filter((header) => !headers.includes(header));
-  if (missing.length > 0) throw new Error(`Missing CSV columns: ${missing.join(", ")}`);
-
-  return lines.slice(1).map((line) => {
-    const values = splitCsvLine(line);
-    const record = Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""])) as Record<string, string>;
-    const gosiSystem =
-      record.gosiSystem === "old" || record.gosiSystem === "new"
-        ? record.gosiSystem
-        : undefined;
-    return {
-      fullName: record.fullName ?? "",
-      nationality: record.nationality === "expat" ? "expat" as const : "saudi" as const,
-      hireDate: record.hireDate ?? "",
-      departmentName: record.departmentName || undefined,
-      designationTitle: record.designationTitle || undefined,
-      managerFullName: record.managerFullName || undefined,
-      jobTitle: record.jobTitle || undefined,
-      gosiSystem,
-      iqamaNumberEnc: record.iqamaNumberEnc || undefined,
-      salaryBasic: Number(record.salaryBasic),
-      salaryHousing: Number(record.salaryHousing || 0),
-      salaryTransport: Number(record.salaryTransport || 0),
-    };
-  });
-}
-
-function downloadEmployeeSample() {
-  const rows = [
-    employeeCsvHeaders.join(","),
-    "Aisha Al-Harbi,saudi,2026-01-10,People Operations,HR Manager,,HR Manager,new,1000000001,18000,4500,1500",
-    "Omar Khan,expat,2026-02-01,Field Operations,Technician,Aisha Al-Harbi,Field Technician,,2000000001,9000,2500,900",
-  ];
-  const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "employee-import-sample.csv";
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
-export default function EmployeesPage() {
-  const router = useRouter();
-  const utils = api.useUtils();
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("");
-  const [importMessage, setImportMessage] = useState("");
-
-  const { data, isLoading } = api.employee.list.useQuery({
-    search: (search || undefined) as any,
-    status: (status as "active" | "terminated" | "suspended" | "on_leave") || undefined,
-    pageSize: 50,
-  } as any);
-
-  const bulkCreate = api.employee.bulkCreate.useMutation({
-    onSuccess: (result) => {
-      utils.employee.list.invalidate();
-      const firstError = result.errors[0];
-      setImportMessage(
-        firstError
-          ? `Imported ${result.created.length} employees. ${result.errors.length} rows need correction. First issue: row ${firstError.row} - ${firstError.message}`
-          : `Imported ${result.created.length} employees successfully.`,
-      );
-    },
-    onError: (error) => setImportMessage(error.message),
-  });
-
-  async function handleEmployeeUpload(file: File | null) {
-    if (!file) return;
-    try {
-      const rows = parseEmployeeCsv(await file.text());
-      setImportMessage(`Importing ${rows.length} employees...`);
-      bulkCreate.mutate({ rows });
-    } catch (error) {
-      setImportMessage(error instanceof Error ? error.message : "Could not read the upload file.");
-    }
-  }
+export default async function EmployeesPage() {
+  const user = await getSessionUser();
+  const tenantId = tenantIdFor(user);
+  const [employees, departments, designations] = await Promise.all([
+    getEmployees(tenantId),
+    getDepartments(tenantId),
+    getDesignations(tenantId),
+  ]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Employees</h1>
-          <p className="text-muted-foreground">Manage employee records</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" onClick={downloadEmployeeSample}>
-            <Download className="mr-2 h-4 w-4" /> Sample CSV
-          </Button>
-          <label className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground">
-            <Upload className="h-4 w-4" /> Upload CSV
-            <input
-              type="file"
-              accept=".csv,text/csv"
-              className="sr-only"
-              onChange={(event) => {
-                handleEmployeeUpload(event.target.files?.[0] ?? null);
-                event.currentTarget.value = "";
-              }}
-            />
-          </label>
-          <Button asChild>
-            <Link href="/employees/new">
-              <Plus className="mr-2 h-4 w-4" /> New Employee
-            </Link>
-          </Button>
-        </div>
-      </div>
+    <DashboardShell user={user} regulatoryContext="saudi" preferredLanguage={user.preferredLanguage ?? "en"}>
+      <PageTitle
+        eyebrow="People"
+        title="Employees"
+        description="Add, update, delete, and remove employees directly in Supabase. Salary fields feed the Saudi payroll base."
+      />
 
-      {importMessage && (
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-          {bulkCreate.isPending ? "Importing employees..." : importMessage}
-        </div>
-      )}
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search by name..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="flex h-10 w-40 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              <option value="">All Status</option>
-              <option value="active">Active</option>
-              <option value="terminated">Terminated</option>
-              <option value="suspended">Suspended</option>
-              <option value="on_leave">On Leave</option>
+      <section className="rounded-lg border border-slate-200 bg-white p-5">
+        <h2 className="text-lg font-semibold text-slate-950">Add employee</h2>
+        <form action={createEmployee} className="mt-4 grid gap-3 md:grid-cols-4">
+          <Field label="Code"><input name="employeeCode" required className={inputClass} placeholder="RUKN-006" /></Field>
+          <Field label="Full name"><input name="fullName" required className={inputClass} /></Field>
+          <Field label="Email"><input name="email" type="email" required className={inputClass} /></Field>
+          <Field label="Phone"><input name="phone" className={inputClass} /></Field>
+          <Field label="Nationality"><input name="nationality" className={inputClass} defaultValue="Saudi" /></Field>
+          <Field label="Department">
+            <select name="departmentId" className={selectClass} defaultValue="">
+              <option value="">None</option>
+              {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
+          </Field>
+          <Field label="Designation">
+            <select name="designationId" className={selectClass} defaultValue="">
+              <option value="">None</option>
+              {designations.map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
+            </select>
+          </Field>
+          <Field label="Manager">
+            <select name="managerEmployeeId" className={selectClass} defaultValue="">
+              <option value="">None</option>
+              {employees.map((e) => <option key={e.id} value={e.id}>{e.fullName}</option>)}
+            </select>
+          </Field>
+          <Field label="Hire date"><input name="hireDate" type="date" className={inputClass} defaultValue={new Date().toISOString().slice(0, 10)} /></Field>
+          <Field label="Status">
+            <select name="employmentStatus" className={selectClass} defaultValue="active">
+              <option value="active">Active</option>
+              <option value="on_leave">On leave</option>
+              <option value="suspended">Suspended</option>
+              <option value="terminated">Terminated</option>
+            </select>
+          </Field>
+          <Field label="Basic salary"><input name="baseSalary" type="number" className={inputClass} defaultValue="0" /></Field>
+          <Field label="Housing"><input name="housingAllowance" type="number" className={inputClass} defaultValue="0" /></Field>
+          <Field label="Transport"><input name="transportAllowance" type="number" className={inputClass} defaultValue="0" /></Field>
+          <Field label="Qiwa contract">
+            <select name="qiwaContractStatus" className={selectClass} defaultValue="pending">
+              <option value="pending">Pending</option>
+              <option value="active">Active</option>
+              <option value="expired">Expired</option>
+              <option value="not_required">Not required</option>
+            </select>
+          </Field>
+          <div className="flex items-end"><SubmitButton>Add employee</SubmitButton></div>
+        </form>
+      </section>
+
+      <section className="mt-6 space-y-3">
+        {employees.map((employee) => (
+          <div key={employee.id} className="rounded-lg border border-slate-200 bg-white p-4">
+            <form action={updateEmployee} className="grid gap-3 lg:grid-cols-12">
+              <input type="hidden" name="id" value={employee.id} />
+              <div className="lg:col-span-2"><Field label="Name"><input name="fullName" className={inputClass} defaultValue={employee.fullName} /></Field></div>
+              <div className="lg:col-span-2"><Field label="Email"><input name="email" type="email" className={inputClass} defaultValue={employee.email} /></Field></div>
+              <div><Field label="Phone"><input name="phone" className={inputClass} defaultValue={employee.phone ?? ""} /></Field></div>
+              <div><Field label="Department"><select name="departmentId" className={selectClass} defaultValue={employee.departmentId ?? ""}><option value="">None</option>{departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select></Field></div>
+              <div><Field label="Designation"><select name="designationId" className={selectClass} defaultValue={employee.designationId ?? ""}><option value="">None</option>{designations.map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}</select></Field></div>
+              <div><Field label="Manager"><select name="managerEmployeeId" className={selectClass} defaultValue={employee.managerEmployeeId ?? ""}><option value="">None</option>{employees.filter((e) => e.id !== employee.id).map((e) => <option key={e.id} value={e.id}>{e.fullName}</option>)}</select></Field></div>
+              <div><Field label="Status"><select name="employmentStatus" className={selectClass} defaultValue={employee.employmentStatus}><option value="active">Active</option><option value="on_leave">On leave</option><option value="suspended">Suspended</option><option value="terminated">Terminated</option></select></Field></div>
+              <div><Field label="Basic"><input name="baseSalary" type="number" className={inputClass} defaultValue={employee.baseSalary} /></Field></div>
+              <div><Field label="Housing"><input name="housingAllowance" type="number" className={inputClass} defaultValue={employee.housingAllowance} /></Field></div>
+              <div><Field label="Transport"><input name="transportAllowance" type="number" className={inputClass} defaultValue={employee.transportAllowance} /></Field></div>
+              <div><Field label="Qiwa"><select name="qiwaContractStatus" className={selectClass} defaultValue={employee.qiwaContractStatus}><option value="pending">Pending</option><option value="active">Active</option><option value="expired">Expired</option><option value="not_required">Not required</option></select></Field></div>
+              <div className="flex items-end gap-2 lg:col-span-12">
+                <SubmitButton>Update employee</SubmitButton>
+                <span className="text-xs text-slate-500">{employee.employeeCode} · {employee.locationName ?? "No location"}</span>
+              </div>
+            </form>
+            <form action={deleteEmployee} className="mt-3">
+              <input type="hidden" name="id" value={employee.id} />
+              <SubmitButton tone="danger">Delete employee</SubmitButton>
+            </form>
           </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Full Name</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Nationality</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Hire Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
-                    Loading...
-                  </TableCell>
-                </TableRow>
-              ) : data?.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
-                    No employees found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                data?.map((employee: any) => (
-                  <TableRow
-                    key={employee.id}
-                    className="cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-700/30"
-                    role="link"
-                    tabIndex={0}
-                    aria-label={`Open ${employee.fullName}`}
-                    onClick={() => router.push(`/employees/${employee.id}`)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        router.push(`/employees/${employee.id}`);
-                      }
-                    }}
-                  >
-                    <TableCell className="font-medium">{employee.fullName}</TableCell>
-                    <TableCell>{employee.department?.name ?? "-"}</TableCell>
-                    <TableCell className="capitalize">{employee.nationality}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={statusColors[employee.employmentStatus] ?? "outline"}
-                        className={customColors[employee.employmentStatus] ?? ""}
-                      >
-                        {employee.employmentStatus.replace("_", " ")}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{employee.hireDate}</TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/employees/${employee.id}`);
-                        }}
-                      >
-                        View
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
+        ))}
+      </section>
+    </DashboardShell>
   );
 }

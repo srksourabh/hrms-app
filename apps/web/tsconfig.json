@@ -7,9 +7,7 @@
       "@ui/*": ["../../packages/ui/src/*"],
       "@db/*": ["../../packages/db/src/*"],
       "@auth/*": ["../../packages/auth/src/*"],
-      "@validators/*": ["../../packages/validators/src/*"],
-      "@config/*": ["../../packages/config/src/*"],
-      "@email/*": ["../../packages/email/src/*"]
+      "@config/*": ["../../packages/config/src/*"]
     },
     "jsx": "preserve"
   },

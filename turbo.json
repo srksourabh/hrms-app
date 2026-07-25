@@ -12,11 +12,6 @@
         "AUTH_SECRET",
         "AUTH_URL",
         "DATABASE_URL",
-        "DEMO_MODE",
-        "GEMINI_API_KEY",
-        "LLM_PROVIDER",
-        "REDIS_URL",
-        "RESEND_API_KEY",
         "NEXT_PUBLIC_APP_URL",
         "NEXTAUTH_URL",
         "NODE_ENV"
@@ -30,10 +25,6 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "outputs": []
-    },
-    "test:e2e": {
-      "dependsOn": ["build"],
       "outputs": []
     },
     "db:push": {

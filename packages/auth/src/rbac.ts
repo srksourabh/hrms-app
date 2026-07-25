@@ -33,6 +33,7 @@ export const capabilities = [
   "attendance:view_company",
   "attendance:view_self",
   "attendance:manage",
+  "locations:view_company",
   "leave:view_company",
   "leave:approve",
   "leave:request_self",
@@ -82,6 +83,7 @@ const roleCapabilities: Record<AppRole, readonly Capability[]> = {
     "profile:view_self",
     "attendance:view_company",
     "attendance:view_self",
+    "locations:view_company",
     "leave:view_company",
     "leave:approve",
     "leave:request_self",
@@ -103,6 +105,7 @@ const roleCapabilities: Record<AppRole, readonly Capability[]> = {
     "attendance:view_company",
     "attendance:view_self",
     "attendance:manage",
+    "locations:view_company",
     "leave:view_company",
     "leave:approve",
     "leave:request_self",
@@ -128,6 +131,7 @@ const roleCapabilities: Record<AppRole, readonly Capability[]> = {
     "people:view_company",
     "profile:view_self",
     "attendance:view_company",
+    "locations:view_company",
     "leave:view_company",
     "payroll:view_company",
     "payroll:run",
@@ -165,7 +169,9 @@ export function can(role: string | null | undefined, capability: Capability): bo
 
 const employeeRoutePrefixes = [
   "/profile",
+  "/attendance/me",
   "/leave",
+  "/expenses",
   "/documents",
   // Employee self-service payroll page (own payslips). Distinct from the
   // HR-only /payroll routes — this prefix matches only /payroll/me[/...].

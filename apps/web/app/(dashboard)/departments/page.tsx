@@ -1,110 +1,74 @@
-"use client";
+import { DashboardShell } from "~/components/dashboard-shell";
+import { Field, inputClass, PageTitle, selectClass, SubmitButton } from "~/components/hr/ui";
+import {
+  createDepartment,
+  deleteDepartment,
+  getDepartments,
+  getEmployees,
+  getSessionUser,
+  tenantIdFor,
+  updateDepartment,
+} from "~/lib/hr-direct";
 
-import { api } from "~/trpc/react";
-import Link from "next/link";
-import { Button } from "@hrms-app/ui";
-import { Plus, Trash2, ChevronRight, ChevronDown } from "lucide-react";
-import { useState } from "react";
-
-interface TreeNode {
-  id: string;
-  name: string;
-  parentDepartmentId: string | null;
-  headEmployeeId: string | null;
-  head: { id: string; fullName: string } | null;
-  employees: { id: string }[];
-  children: TreeNode[];
-}
-
-function DeptRow({ node, depth }: { node: TreeNode; depth: number }) {
-  const [expanded, setExpanded] = useState(true);
-  const hasChildren = node.children && node.children.length > 0;
-  const deleteMutation = api.department.delete.useMutation({
-    onSuccess: () => {
-      window.location.reload();
-    },
-  });
+export default async function DepartmentsPage() {
+  const user = await getSessionUser();
+  const tenantId = tenantIdFor(user);
+  const [departments, employees] = await Promise.all([getDepartments(tenantId), getEmployees(tenantId)]);
 
   return (
-    <>
-      <tr className="border-b hover:bg-muted/50">
-        <td className="p-4 align-middle" style={{ paddingLeft: `${16 + depth * 24}px` }}>
-          <div className="flex items-center gap-2">
-            {hasChildren && (
-              <button onClick={() => setExpanded(!expanded)} className="h-4 w-4">
-                {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              </button>
-            )}
-            {!hasChildren && <span className="w-4" />}
-            <Link href={`/departments/${node.id}`} className="font-medium hover:underline">
-              {node.name}
-            </Link>
+    <DashboardShell user={user} regulatoryContext="saudi" preferredLanguage={user.preferredLanguage ?? "en"}>
+      <PageTitle eyebrow="Organization" title="Departments" description="Create, update, and remove departments for the HR manager organogram." />
+
+      <section className="rounded-lg border border-slate-200 bg-white p-5">
+        <h2 className="text-lg font-semibold text-slate-950">Add department</h2>
+        <form action={createDepartment} className="mt-4 grid gap-3 md:grid-cols-6">
+          <Field label="Name"><input name="name" required className={inputClass} /></Field>
+          <Field label="Arabic name"><input name="nameAr" className={inputClass} /></Field>
+          <Field label="Code"><input name="code" required className={inputClass} placeholder="OPS" /></Field>
+          <Field label="Manager">
+            <select name="managerEmployeeId" className={selectClass} defaultValue="">
+              <option value="">None</option>
+              {employees.map((e) => <option key={e.id} value={e.id}>{e.fullName}</option>)}
+            </select>
+          </Field>
+          <Field label="Cost center"><input name="costCenter" className={inputClass} /></Field>
+          <Field label="City"><input name="locationCity" className={inputClass} defaultValue="Riyadh" /></Field>
+          <div className="flex items-end"><SubmitButton>Add department</SubmitButton></div>
+        </form>
+      </section>
+
+      <section className="mt-6 grid gap-3">
+        {departments.map((department) => (
+          <div key={department.id} className="rounded-lg border border-slate-200 bg-white p-4">
+            <form action={updateDepartment} className="grid gap-3 md:grid-cols-7">
+              <input type="hidden" name="id" value={department.id} />
+              <Field label="Name"><input name="name" className={inputClass} defaultValue={department.name} /></Field>
+              <Field label="Arabic name"><input name="nameAr" className={inputClass} defaultValue={department.nameAr ?? ""} /></Field>
+              <Field label="Code"><input name="code" className={inputClass} defaultValue={department.code} /></Field>
+              <Field label="Manager">
+                <select name="managerEmployeeId" className={selectClass} defaultValue={department.managerEmployeeId ?? ""}>
+                  <option value="">None</option>
+                  {employees.map((e) => <option key={e.id} value={e.id}>{e.fullName}</option>)}
+                </select>
+              </Field>
+              <Field label="Cost center"><input name="costCenter" className={inputClass} defaultValue="" /></Field>
+              <Field label="City"><input name="locationCity" className={inputClass} defaultValue={department.locationCity} /></Field>
+              <label className="flex items-end gap-2 text-sm text-slate-700">
+                <input type="checkbox" name="isActive" defaultChecked={department.isActive} />
+                Active
+              </label>
+              <div className="flex items-center gap-3 md:col-span-7">
+                <SubmitButton>Update department</SubmitButton>
+                <span className="text-xs text-slate-500">{department.employeeCount} active employees</span>
+              </div>
+            </form>
+            <form action={deleteDepartment} className="mt-3">
+              <input type="hidden" name="id" value={department.id} />
+              <SubmitButton tone="danger">Remove department</SubmitButton>
+            </form>
           </div>
-        </td>
-        <td className="p-4 align-middle">{node.head?.fullName ?? "—"}</td>
-        <td className="p-4 align-middle">{node.employees?.length ?? 0}</td>
-        <td className="p-4 align-middle">
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/departments/${node.id}`}>View</Link>
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => {
-                if (confirm("Delete this department?")) deleteMutation.mutate(node.id);
-              }}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        </td>
-      </tr>
-      {hasChildren && expanded && node.children.map((child: any) => <DeptRow key={child.id} node={child} depth={depth + 1} />)}
-    </>
-  );
-}
-
-export default function DepartmentsPage() {
-  const { data: tree, isLoading } = api.department.tree.useQuery();
-
-  if (isLoading) return <div>Loading...</div>;
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Departments</h1>
-          <p className="text-muted-foreground">Manage departments and hierarchy</p>
-        </div>
-        <Button asChild>
-          <Link href="/departments/new">
-            <Plus className="mr-2 h-4 w-4" /> New Department
-          </Link>
-        </Button>
-      </div>
-      <div className="overflow-x-auto rounded-lg border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-muted/50">
-              <th className="h-12 px-4 text-left font-medium text-muted-foreground">Name</th>
-              <th className="h-12 px-4 text-left font-medium text-muted-foreground">Head</th>
-              <th className="h-12 px-4 text-left font-medium text-muted-foreground">Employees</th>
-              <th className="h-12 px-4 text-left font-medium text-muted-foreground">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tree?.map((node: any) => <DeptRow key={node.id} node={node} depth={0} />)}
-            {(!tree || tree.length === 0) && (
-              <tr>
-                <td colSpan={4} className="p-4 text-center text-muted-foreground">
-                  No departments found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+        ))}
+      </section>
+    </DashboardShell>
   );
 }

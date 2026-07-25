@@ -1,23 +1,19 @@
 import type { NextConfig } from "next";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-// External hosts the browser actually contacts (PRIV-002) — explicit allow-list
-// instead of blanket https: so injected code has no open exfiltration channel.
-const SUPABASE_STORAGE_HOST = "https://iefwhxxhrycaalhxkfgp.supabase.co"; // uploaded documents (api/upload)
-const OSM_TILE_HOSTS = "https://tile.openstreetmap.org https://*.tile.openstreetmap.org"; // Leaflet location picker
-const OPENFREEMAP_HOST = "https://tiles.openfreemap.org"; // MapLibre guide map (style/tiles/glyphs via fetch)
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const SUPABASE_HOST = "https://iefwhxxhrycaalhxkfgp.supabase.co";
+const devScriptSource = process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'";
 
 const contentSecurityPolicy = [
   "default-src 'self'",
-  // 'unsafe-eval' dropped (F1). 'unsafe-inline' retained pending a nonce-based
-  // rollout — Next's inline bootstrap scripts require it until nonces are wired (PRIV-001).
-  "script-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${devScriptSource}`,
   "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' blob: data: ${SUPABASE_STORAGE_HOST} ${OSM_TILE_HOSTS} ${OPENFREEMAP_HOST}`,
+  `img-src 'self' blob: data: ${SUPABASE_HOST}`,
   "font-src 'self' https://frontend-cdn.perplexity.ai",
-  `connect-src 'self' ${SUPABASE_STORAGE_HOST} ${OPENFREEMAP_HOST}`,
-  // maplibre-gl spawns its render worker from a blob: URL; without an explicit
-  // worker-src it would fall back to script-src and be blocked.
-  "worker-src 'self' blob:",
+  `connect-src 'self' ${SUPABASE_HOST}`,
+  "worker-src 'self'",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -26,7 +22,6 @@ const contentSecurityPolicy = [
 
 const securityHeaders = [
   { key: "Content-Security-Policy", value: contentSecurityPolicy },
-  // HSTS: force HTTPS for 2 years incl. subdomains (F1 / SEC-006).
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
@@ -40,12 +35,13 @@ const nextConfig: NextConfig = {
     "@hrms-app/ui",
     "@hrms-app/db",
     "@hrms-app/auth",
-    "@hrms-app/validators",
     "@hrms-app/config",
-    "@hrms-app/email",
   ],
   experimental: {
     optimizePackageImports: ["@hrms-app/ui", "lucide-react"],
+  },
+  turbopack: {
+    root: repoRoot,
   },
   compress: true,
   async headers() {

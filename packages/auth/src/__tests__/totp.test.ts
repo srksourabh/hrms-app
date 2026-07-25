@@ -35,9 +35,9 @@ describe("TOTP", () => {
   });
 
   it("builds an otpauth URI with issuer and secret", () => {
-    const uri = totpAuthUri("ABCDEFGHIJKLMNOP", "user@example.com", "Taazur");
+    const uri = totpAuthUri("ABCDEFGHIJKLMNOP", "user@example.com", "Saudi HRMS Portal");
     expect(uri.startsWith("otpauth://totp/")).toBe(true);
     expect(uri).toContain("secret=ABCDEFGHIJKLMNOP");
-    expect(uri).toContain("issuer=Taazur");
+    expect(uri).toContain("issuer=Saudi+HRMS+Portal");
   });
 });

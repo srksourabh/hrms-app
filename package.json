@@ -7,13 +7,11 @@
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "test": "vitest",
-    "test:e2e": "pnpm --filter @hrms-app/web exec playwright test --config=../../playwright.config.ts",
     "arch:review": "node scripts/architecture-review-agent.mjs",
     "db:push": "pnpm -F @hrms-app/db db:push",
     "db:generate": "pnpm -F @hrms-app/db db:generate",
     "db:migrate": "pnpm -F @hrms-app/db db:migrate",
     "db:studio": "pnpm -F @hrms-app/db db:studio",
-    "scaffold": "powershell -File scripts/scaffold.ps1",
     "clean": "turbo clean && rimraf node_modules"
   },
   "engines": {
@@ -23,11 +21,5 @@
   "devDependencies": {
     "turbo": "^2.10.4",
     "vitest": "^3.0.0"
-  },
-  "dependencies": {
-    "@hookform/resolvers": "^5.4.0",
-    "lucide-react": "^0.468.0",
-    "react-hook-form": "^7.81.0",
-    "next": "^16.0.0"
   }
 }

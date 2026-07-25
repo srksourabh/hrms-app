@@ -45,7 +45,7 @@ export function Header({ user, onOpenMenu }: HeaderProps) {
         <Menu className="h-5 w-5" />
       </button>
 
-      <Link href="/modules" className="group hidden h-11 min-w-0 max-w-md flex-1 items-center gap-3 rounded-full border border-slate-200 bg-white px-4 text-sm text-slate-400 transition hover:border-emerald-800/25 hover:text-slate-700 sm:flex">
+      <Link href="/employees" className="group hidden h-11 min-w-0 max-w-md flex-1 items-center gap-3 rounded-full border border-slate-200 bg-white px-4 text-sm text-slate-400 transition hover:border-emerald-800/25 hover:text-slate-700 sm:flex">
         <Search className="h-4 w-4" />
         <span className="truncate">{isArabic ? "ابحث في الموظفين والوحدات والمهام" : "Search people, modules and actions"}</span>
         <span className="ml-auto hidden items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-400 lg:flex"><span>K</span></span>

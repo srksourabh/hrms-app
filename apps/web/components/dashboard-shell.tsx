@@ -4,7 +4,6 @@ import { useCallback, useState } from "react";
 import { X } from "lucide-react";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
-import { FloatingChatbot } from "./floating-chatbot";
 import { RegulatoryContext } from "~/lib/regulatory-context";
 import type { Lang } from "~/lib/i18n";
 
@@ -66,9 +65,6 @@ export function DashboardShell({
           <Header user={user} onOpenMenu={() => setMobileOpen(true)} />
           <main id="main-content" className="mx-auto w-full max-w-[1680px] p-4 sm:p-6 lg:p-8">{children}</main>
         </div>
-        {/* Scoped to the employee module only (not a global overlay for every
-            role) — the self-service help assistant is for employees. */}
-        {user.role === "employee" && <FloatingChatbot />}
       </div>
     </RegulatoryContext.Provider>
   );

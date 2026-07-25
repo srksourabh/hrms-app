@@ -1,187 +1,68 @@
-"use client";
+import { DashboardShell } from "~/components/dashboard-shell";
+import { Field, inputClass, PageTitle, selectClass, SubmitButton } from "~/components/hr/ui";
+import {
+  createDesignation,
+  deleteDesignation,
+  getDepartments,
+  getDesignations,
+  getSessionUser,
+  tenantIdFor,
+  updateDesignation,
+} from "~/lib/hr-direct";
 
-import { useState } from "react";
-import { api } from "~/trpc/react";
-import { Button } from "@hrms-app/ui";
-import { Plus, Trash2, Edit2, Briefcase, X, Loader2 } from "lucide-react";
-
-export default function DesignationsPage() {
-  const { data: list, isLoading, refetch } = api.designation.list.useQuery();
-  const [showModal, setShowModal] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
-  const [code, setCode] = useState("");
-  const [description, setDescription] = useState("");
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const createMutation = api.designation.create.useMutation({
-    onSuccess: () => {
-      resetForm();
-      refetch();
-    },
-    onError: (err: { message: string }) => setErrorMsg(err.message),
-  });
-
-  const updateMutation = api.designation.update.useMutation({
-    onSuccess: () => {
-      resetForm();
-      refetch();
-    },
-    onError: (err: { message: string }) => setErrorMsg(err.message),
-  });
-
-  const deleteMutation = api.designation.delete.useMutation({
-    onSuccess: () => refetch(),
-    onError: (err: { message: string }) => alert(err.message),
-  });
-
-  function resetForm() {
-    setShowModal(false);
-    setEditId(null);
-    setTitle("");
-    setCode("");
-    setDescription("");
-    setErrorMsg(null);
-  }
-
-  function handleEdit(item: any) {
-    setEditId(item.id);
-    setTitle(item.title);
-    setCode(item.code ?? "");
-    setDescription(item.description ?? "");
-    setShowModal(true);
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setErrorMsg(null);
-    if (editId) {
-      updateMutation.mutate({ id: editId, data: { title, code, description } });
-    } else {
-      createMutation.mutate({ title, code, description });
-    }
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center gap-2 p-12 text-sm text-slate-500">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading designations…
-      </div>
-    );
-  }
+export default async function DesignationsPage() {
+  const user = await getSessionUser();
+  const tenantId = tenantIdFor(user);
+  const [designations, departments] = await Promise.all([getDesignations(tenantId), getDepartments(tenantId)]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Designations</h1>
-          <p className="text-sm text-slate-500">Add and manage job designations for company employees</p>
-        </div>
-        <Button onClick={() => { resetForm(); setShowModal(true); }} className="bg-slate-950 hover:bg-emerald-900">
-          <Plus className="mr-2 h-4 w-4" /> New Designation
-        </Button>
-      </div>
+    <DashboardShell user={user} regulatoryContext="saudi" preferredLanguage={user.preferredLanguage ?? "en"}>
+      <PageTitle eyebrow="Organization" title="Designations" description="Create, update, and remove job titles and salary bands." />
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-            <tr>
-              <th className="px-4 py-3 text-left">Title</th>
-              <th className="px-4 py-3 text-left">Code</th>
-              <th className="px-4 py-3 text-left">Description</th>
-              <th className="px-4 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {list?.map((d: any) => (
-              <tr key={d.id} className="hover:bg-slate-50/60">
-                <td className="px-4 py-3 font-semibold text-slate-900 flex items-center gap-2">
-                  <Briefcase className="h-4 w-4 text-emerald-600" /> {d.title}
-                </td>
-                <td className="px-4 py-3 font-mono text-xs text-slate-600">{d.code || "—"}</td>
-                <td className="px-4 py-3 text-xs text-slate-500">{d.description || "—"}</td>
-                <td className="px-4 py-3 text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleEdit(d)}>
-                      <Edit2 className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => {
-                        if (confirm("Delete this designation?")) deleteMutation.mutate(d.id);
-                      }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {(!list || list.length === 0) && (
-              <tr>
-                <td colSpan={4} className="p-8 text-center text-slate-500">
-                  No designations created yet. Click "New Designation" above to add one.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <section className="rounded-lg border border-slate-200 bg-white p-5">
+        <h2 className="text-lg font-semibold text-slate-950">Add designation</h2>
+        <form action={createDesignation} className="mt-4 grid gap-3 md:grid-cols-7">
+          <Field label="Title"><input name="title" required className={inputClass} /></Field>
+          <Field label="Arabic title"><input name="titleAr" className={inputClass} /></Field>
+          <Field label="Department">
+            <select name="departmentId" className={selectClass} defaultValue="">
+              <option value="">None</option>
+              {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </Field>
+          <Field label="Grade"><input name="grade" className={inputClass} placeholder="P2" /></Field>
+          <Field label="Min salary"><input name="minSalary" type="number" className={inputClass} defaultValue="0" /></Field>
+          <Field label="Max salary"><input name="maxSalary" type="number" className={inputClass} defaultValue="0" /></Field>
+          <label className="flex items-end gap-2 text-sm text-slate-700"><input type="checkbox" name="isManagerial" /> Managerial</label>
+          <div className="flex items-end"><SubmitButton>Add designation</SubmitButton></div>
+        </form>
+      </section>
 
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-slate-900">
-                {editId ? "Edit Designation" : "Add Designation"}
-              </h2>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            {errorMsg && <div className="rounded-lg bg-rose-50 p-3 text-xs text-rose-700">{errorMsg}</div>}
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700">Designation Title</label>
-                <input
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Senior Software Engineer / HR Business Partner"
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700">Code (Optional)</label>
-                <input
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  placeholder="e.g. ENG-01"
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700">Description (Optional)</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Responsibilities & scope"
-                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-sm focus:border-emerald-500 focus:outline-none"
-                />
-              </div>
-              <div className="pt-2 flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setShowModal(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700">
-                  {editId ? "Save Changes" : "Create Designation"}
-                </Button>
+      <section className="mt-6 grid gap-3">
+        {designations.map((designation) => (
+          <div key={designation.id} className="rounded-lg border border-slate-200 bg-white p-4">
+            <form action={updateDesignation} className="grid gap-3 md:grid-cols-8">
+              <input type="hidden" name="id" value={designation.id} />
+              <Field label="Title"><input name="title" className={inputClass} defaultValue={designation.title} /></Field>
+              <Field label="Arabic title"><input name="titleAr" className={inputClass} defaultValue={designation.titleAr ?? ""} /></Field>
+              <Field label="Department"><select name="departmentId" className={selectClass} defaultValue={designation.departmentId ?? ""}><option value="">None</option>{departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select></Field>
+              <Field label="Grade"><input name="grade" className={inputClass} defaultValue={designation.grade ?? ""} /></Field>
+              <Field label="Min"><input name="minSalary" type="number" className={inputClass} defaultValue={designation.minSalary} /></Field>
+              <Field label="Max"><input name="maxSalary" type="number" className={inputClass} defaultValue={designation.maxSalary} /></Field>
+              <label className="flex items-end gap-2 text-sm text-slate-700"><input type="checkbox" name="isManagerial" defaultChecked={designation.isManagerial} /> Managerial</label>
+              <label className="flex items-end gap-2 text-sm text-slate-700"><input type="checkbox" name="isActive" defaultChecked={designation.isActive} /> Active</label>
+              <div className="flex items-center gap-3 md:col-span-8">
+                <SubmitButton>Update designation</SubmitButton>
+                <span className="text-xs text-slate-500">{designation.departmentName ?? "No department"}</span>
               </div>
             </form>
+            <form action={deleteDesignation} className="mt-3">
+              <input type="hidden" name="id" value={designation.id} />
+              <SubmitButton tone="danger">Remove designation</SubmitButton>
+            </form>
           </div>
-        </div>
-      )}
-    </div>
+        ))}
+      </section>
+    </DashboardShell>
   );
 }

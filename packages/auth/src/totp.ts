@@ -1,5 +1,5 @@
 /**
- * Dependency-free TOTP (RFC 6238) — HMAC-SHA1, 30-second step, 6 digits.
+ * Dependency-free TOTP (RFC 6238) - HMAC-SHA1, 30-second step, 6 digits.
  * Used for optional MFA on privileged accounts (C4). No third-party library.
  */
 import { createHmac, randomBytes } from "crypto";
@@ -47,8 +47,8 @@ function hotp(key: Buffer, counter: number): string {
 }
 
 /**
- * Verify a submitted 6-digit code against the secret, allowing ±`window` steps
- * of clock drift (default ±1 = ±30s).
+ * Verify a submitted 6-digit code against the secret, allowing +/-`window` steps
+ * of clock drift (default +/-1 = +/-30s).
  */
 export function verifyTotp(secret: string, token: string, window = 1): boolean {
   const code = (token ?? "").trim();
@@ -63,7 +63,7 @@ export function verifyTotp(secret: string, token: string, window = 1): boolean {
 }
 
 /** Build an otpauth:// URI for authenticator-app enrollment (QR code). */
-export function totpAuthUri(secret: string, account: string, issuer = "Taazur"): string {
+export function totpAuthUri(secret: string, account: string, issuer = "Saudi HRMS Portal"): string {
   const label = encodeURIComponent(`${issuer}:${account}`);
   const params = new URLSearchParams({
     secret,

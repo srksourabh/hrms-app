@@ -1,151 +1,73 @@
-"use client";
+import { DashboardShell } from "~/components/dashboard-shell";
+import { Field, inputClass, PageTitle, selectClass, SubmitButton } from "~/components/hr/ui";
+import {
+  createLeaveRequest,
+  decideLeave,
+  getEmployees,
+  getLeaveRequests,
+  getLeaveTypes,
+  getSessionUser,
+  tenantIdFor,
+} from "~/lib/hr-direct";
 
-import { api } from "~/trpc/react";
-import { useState } from "react";
-import { useSession } from "next-auth/react";
-import { Button, Badge } from "@hrms-app/ui";
-import { Check, X, Plus } from "lucide-react";
-import Link from "next/link";
-
-const statusTabs = [
-  { label: "All", value: undefined },
-  { label: "Pending", value: "pending" as const },
-  { label: "Approved", value: "approved" as const },
-  { label: "Rejected", value: "rejected" as const },
-];
-
-const statusBadge: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; className: string }> = {
-  pending: { variant: "outline", className: "bg-amber-100 text-amber-800 border-amber-200" },
-  approved: { variant: "default", className: "bg-green-100 text-green-800 border-green-200" },
-  rejected: { variant: "destructive", className: "bg-red-100 text-red-800 border-red-200" },
-  cancelled: { variant: "secondary", className: "bg-gray-100 text-gray-800 border-gray-200" },
-};
-
-export default function LeavePage() {
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
-  const utils = api.useUtils();
-  const { data: session } = useSession();
-  const isEmployee = session?.user?.role === "employee";
-
-  // Employees may not call the company-scoped `list` (RBAC: leave:view_company).
-  // They read their OWN requests via `my`; managers/HR keep the full queue with
-  // the server-side status filter. This is why a submitted request looked
-  // "missing" — the page previously called the forbidden `list` for everyone.
-  const myQuery = api.leave.request.my.useQuery(undefined, { enabled: isEmployee });
-  const listQuery = api.leave.request.list.useQuery(
-    { status: statusFilter as any },
-    { enabled: !isEmployee },
-  );
-  const approveMutation = api.leave.request.updateStatus.useMutation({
-    onSuccess: () => {
-      utils.leave.request.list.invalidate();
-      utils.leave.request.my.invalidate();
-    },
-  });
-
-  const isLoading = isEmployee ? myQuery.isLoading : listQuery.isLoading;
-  // `my` returns every status; apply the tab filter client-side for employees.
-  const requests = isEmployee
-    ? (myQuery.data ?? []).filter((r: any) => !statusFilter || r.status === statusFilter)
-    : listQuery.data;
-
-  if (isLoading) return <div>Loading...</div>;
+export default async function LeavePage() {
+  const user = await getSessionUser();
+  const tenantId = tenantIdFor(user);
+  const isEmployee = user.role === "employee";
+  const [employees, leaveTypes, requests] = await Promise.all([
+    getEmployees(tenantId),
+    getLeaveTypes(tenantId),
+    getLeaveRequests(tenantId, isEmployee ? user.employeeId : null),
+  ]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">{isEmployee ? "My Leave Requests" : "Leave Requests"}</h1>
-          <p className="text-muted-foreground">
-            {isEmployee ? "Track your time-off requests and their approval status" : "Manage employee leave requests"}
-          </p>
+    <DashboardShell user={user} regulatoryContext="saudi" preferredLanguage={user.preferredLanguage ?? "en"}>
+      <PageTitle eyebrow="Leave" title="Leave application and approval" description="Employees can apply for leave. HR and managers can approve or reject requests." />
+
+      <section className="rounded-lg border border-slate-200 bg-white p-5">
+        <h2 className="text-lg font-semibold text-slate-950">New leave application</h2>
+        <form action={createLeaveRequest} className="mt-4 grid gap-3 md:grid-cols-6">
+          {!isEmployee && (
+            <Field label="Employee">
+              <select name="employeeId" className={selectClass}>
+                {employees.map((e) => <option key={e.id} value={e.id}>{e.fullName}</option>)}
+              </select>
+            </Field>
+          )}
+          <Field label="Leave type"><select name="leaveTypeId" className={selectClass}>{leaveTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></Field>
+          <Field label="Start date"><input name="startDate" type="date" required className={inputClass} /></Field>
+          <Field label="End date"><input name="endDate" type="date" required className={inputClass} /></Field>
+          <Field label="Days"><input name="days" type="number" step="0.5" required className={inputClass} defaultValue="1" /></Field>
+          <Field label="Reason"><input name="reason" className={inputClass} /></Field>
+          <div className="flex items-end"><SubmitButton>Apply leave</SubmitButton></div>
+        </form>
+      </section>
+
+      <section className="mt-6 rounded-lg border border-slate-200 bg-white p-5">
+        <h2 className="text-lg font-semibold text-slate-950">Leave details</h2>
+        <div className="mt-4 space-y-3">
+          {requests.map((request) => (
+            <div key={request.id} className="rounded-md border border-slate-100 p-4">
+              <div className="flex flex-wrap justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">{request.fullName} · {request.leaveType ?? "Leave"}</p>
+                  <p className="mt-1 text-xs text-slate-500">{request.startDate} to {request.endDate} · {request.days} days</p>
+                  {request.reason && <p className="mt-2 text-sm text-slate-600">{request.reason}</p>}
+                </div>
+                <span className="h-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-700">{request.status}</span>
+              </div>
+              {!isEmployee && (
+                <form action={decideLeave} className="mt-3 flex flex-wrap items-end gap-2">
+                  <input type="hidden" name="id" value={request.id} />
+                  <input name="managerComment" className={inputClass} placeholder="Manager comment" />
+                  <button name="status" value="approved" className="rounded-md bg-emerald-700 px-3 py-2 text-sm font-semibold text-white">Approve</button>
+                  <button name="status" value="rejected" className="rounded-md border border-red-200 px-3 py-2 text-sm font-semibold text-red-700">Reject</button>
+                </form>
+              )}
+            </div>
+          ))}
         </div>
-        <Button asChild>
-          <Link href="/leave/new">
-            <Plus className="mr-2 h-4 w-4" /> New Leave Request
-          </Link>
-        </Button>
-      </div>
-
-      <div className="flex gap-2 border-b pb-2">
-        {statusTabs.map((tab: any) => (
-          <button
-            key={tab.label}
-            onClick={() => setStatusFilter(tab.value)}
-            className={`px-4 py-2 text-sm font-medium rounded-t-md ${
-              statusFilter === tab.value
-                ? "border-b-2 border-primary text-primary"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="overflow-x-auto rounded-lg border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-muted/50">
-              {!isEmployee && <th className="h-12 px-4 text-left font-medium text-muted-foreground">Employee</th>}
-              <th className="h-12 px-4 text-left font-medium text-muted-foreground">Leave Type</th>
-              <th className="h-12 px-4 text-left font-medium text-muted-foreground">Start Date</th>
-              <th className="h-12 px-4 text-left font-medium text-muted-foreground">End Date</th>
-              <th className="h-12 px-4 text-left font-medium text-muted-foreground">Status</th>
-              {!isEmployee && <th className="h-12 px-4 text-left font-medium text-muted-foreground">Actions</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {requests?.map((req: any) => {
-              const badge = statusBadge[req.status as keyof typeof statusBadge] ?? statusBadge.pending;
-              return (
-                <tr key={req.id} className="border-b hover:bg-muted/50">
-                  {!isEmployee && <td className="p-4 align-middle">{req.employee?.fullName}</td>}
-                  <td className="p-4 align-middle">{req.leaveType?.name}</td>
-                  <td className="p-4 align-middle">{req.startDate}</td>
-                  <td className="p-4 align-middle">{req.endDate}</td>
-                  <td className="p-4 align-middle">
-                    <Badge variant={badge!.variant} className={badge!.className}>
-                      {req.status}
-                    </Badge>
-                  </td>
-                  {!isEmployee && (
-                    <td className="p-4 align-middle">
-                      {req.status === "pending" && (
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-green-600"
-                            onClick={() => approveMutation.mutate({ id: req.id, data: { status: "approved" } })}
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-red-600"
-                            onClick={() => approveMutation.mutate({ id: req.id, data: { status: "rejected" } })}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-                    </td>
-                  )}
-                </tr>
-              );
-            })}
-            {(!requests || requests.length === 0) && (
-              <tr>
-                <td colSpan={isEmployee ? 4 : 6} className="p-4 text-center text-muted-foreground">
-                  No leave requests found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+      </section>
+    </DashboardShell>
   );
 }

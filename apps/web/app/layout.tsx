@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     apple: "/brand/taazur-mark.svg",
   },
   openGraph: {
-    title: `${productBrand.name} · ${productBrand.nameAr}`,
+    title: `${productBrand.name} - ${productBrand.nameAr}`,
     description: productBrand.tagline,
     images: ["/brand/taazur-lockup.svg"],
   },
