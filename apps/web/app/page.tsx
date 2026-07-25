@@ -24,6 +24,29 @@ export default async function HomePage() {
   const user = await getSessionUser();
   const tenantId = tenantIdFor(user);
   const { metrics, reports, employees } = await getDashboardData(tenantId);
+  const canManageEmployees = ["super_admin", "hr_manager", "hr_specialist"].includes(user.role ?? "");
+  const primaryAction = canManageEmployees
+    ? { href: "/employees", label: "Manage employees" }
+    : { href: "/attendance/me", label: "Punch in/out" };
+  const dashboardActions =
+    user.role === "employee"
+      ? [
+          { href: "/attendance/me", label: "Punch in/out", icon: MapPin, detail: "Location-aware attendance" },
+          { href: "/leave", label: "Leave", icon: CalendarCheck, detail: "My leave applications and status" },
+          { href: "/expenses", label: "Expenses", icon: WalletCards, detail: "My claims and reimbursements" },
+          { href: "/departments/organogram", label: "Organogram", icon: Users, detail: "My full reporting tree" },
+        ]
+      : [
+          { href: "/attendance/me", label: "Punch in/out", icon: MapPin, detail: "Location-aware attendance" },
+          { href: "/leave", label: "Leave approval", icon: CalendarCheck, detail: "Applications and manager approval" },
+          { href: "/payroll", label: "Saudi payroll", icon: Landmark, detail: "GOSI, SANED, EOSB, Mudad WPS" },
+          { href: "/expenses", label: "Expense approval", icon: WalletCards, detail: "Claims and reimbursement queue" },
+          { href: "/locations", label: "Locations", icon: MapPinned, detail: "Field team and branch tracking" },
+          { href: "/compliance", label: "Saudi compliance", icon: ShieldCheck, detail: "Qiwa, Iqama, Nitaqat, CCHI" },
+          { href: "/departments/organogram", label: "Organogram", icon: Users, detail: "Manager and team structure" },
+          { href: "/reports", label: "Reports", icon: BarChart3, detail: "Daily, weekly, monthly snapshots" },
+          { href: "/compliance", label: "Audit evidence", icon: FileCheck2, detail: "Saudi regulatory readiness log" },
+        ];
 
   return (
     <DashboardProviders session={{ user, expires: "" }}>
@@ -44,10 +67,10 @@ export default async function HomePage() {
                 </p>
               </div>
               <Link
-                href="/employees"
+                href={primaryAction.href}
                 className="rounded-lg bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-900"
               >
-                Manage employees
+                {primaryAction.label}
               </Link>
             </div>
           </section>
@@ -62,17 +85,7 @@ export default async function HomePage() {
           </section>
 
           <section className="grid gap-4 lg:grid-cols-3">
-            {[
-              { href: "/attendance/me", label: "Punch in/out", icon: MapPin, detail: "Location-aware attendance" },
-              { href: "/leave", label: "Leave approval", icon: CalendarCheck, detail: "Applications and manager approval" },
-              { href: "/payroll", label: "Saudi payroll", icon: Landmark, detail: "GOSI, SANED, EOSB, Mudad WPS" },
-              { href: "/expenses", label: "Expense approval", icon: WalletCards, detail: "Claims and reimbursement queue" },
-              { href: "/locations", label: "Locations", icon: MapPinned, detail: "Field team and branch tracking" },
-              { href: "/compliance", label: "Saudi compliance", icon: ShieldCheck, detail: "Qiwa, Iqama, Nitaqat, CCHI" },
-              { href: "/departments/organogram", label: "Organogram", icon: Users, detail: "Manager and team structure" },
-              { href: "/reports", label: "Reports", icon: BarChart3, detail: "Daily, weekly, monthly snapshots" },
-              { href: "/compliance", label: "Audit evidence", icon: FileCheck2, detail: "Saudi regulatory readiness log" },
-            ].map((item) => {
+            {dashboardActions.map((item) => {
               const Icon = item.icon;
               return (
                 <Link

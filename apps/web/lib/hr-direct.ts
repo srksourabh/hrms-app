@@ -173,8 +173,21 @@ export interface ReportRow {
   summary: string | null;
 }
 
-async function rows<T>(query: SQL): Promise<T[]> {
-  return (await adminDb.execute(query)) as unknown as T[];
+function isTransientDbConnectionError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /connection closed|connection terminated|econnreset|socket hang up|timeout/i.test(message);
+}
+
+async function rows<T>(query: SQL, attempt = 1): Promise<T[]> {
+  try {
+    return (await adminDb.execute(query)) as unknown as T[];
+  } catch (error) {
+    if (attempt < 3 && isTransientDbConnectionError(error)) {
+      await new Promise((resolve) => setTimeout(resolve, 150 * attempt));
+      return rows<T>(query, attempt + 1);
+    }
+    throw error;
+  }
 }
 
 function toNumber(value: FormDataEntryValue | null, fallback = 0): number {
