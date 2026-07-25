@@ -195,6 +195,7 @@ export function canAccessRoute(role: string | null | undefined, pathname: string
   if (role === "candidate") return pathname === "/profile" || pathname.startsWith("/profile/");
   if (role !== "employee") return true;
   if (pathname === "/") return true;
+  if (pathname === "/search") return true;
   return employeeRoutePrefixes.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );

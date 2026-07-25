@@ -7,6 +7,7 @@ const AUTH_ROUTES = ["/login", "/api/auth"];
 const API_ROUTES = ["/api/health"];
 const SIMPLIFIED_HR_ROUTES = [
   "/",
+  "/search",
   "/employees",
   "/departments",
   "/departments/organogram",
@@ -113,6 +114,7 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/",
+    "/search",
     "/api/auth/callback/credentials",
     "/api/trpc/:path*",
     "/employees/:path*",
