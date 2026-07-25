@@ -1,5 +1,6 @@
 export * as schema from "./schema";
 export { getTenantDb, adminDb, createTenantRegistry, createTenantSchema, dropTenantSchema } from "./tenant-manager";
+export { executeAdminSql } from "./direct-sql";
 export { encryptField, decryptField, isEncrypted, encryptedText } from "./crypto";
 
 export { tenants, planTierEnum, regulatoryContextEnum } from "./schema/public/tenants";

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { Session } from "next-auth";
 import { auth } from "@hrms-app/auth";
-import { adminDb } from "@hrms-app/db";
+import { executeAdminSql } from "@hrms-app/db/direct-sql";
 import { sql, type SQL } from "drizzle-orm";
 
 export const DEFAULT_TENANT_ID = "11111111-1111-4111-8111-111111111111";
@@ -173,21 +173,12 @@ export interface ReportRow {
   summary: string | null;
 }
 
-function isTransientDbConnectionError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error);
-  return /connection closed|connection terminated|econnreset|socket hang up|timeout/i.test(message);
+async function execute(query: SQL): Promise<unknown[]> {
+  return executeAdminSql(query);
 }
 
-async function rows<T>(query: SQL, attempt = 1): Promise<T[]> {
-  try {
-    return (await adminDb.execute(query)) as unknown as T[];
-  } catch (error) {
-    if (attempt < 3 && isTransientDbConnectionError(error)) {
-      await new Promise((resolve) => setTimeout(resolve, 150 * attempt));
-      return rows<T>(query, attempt + 1);
-    }
-    throw error;
-  }
+async function rows<T>(query: SQL): Promise<T[]> {
+  return executeAdminSql<T>(query);
 }
 
 function toNumber(value: FormDataEntryValue | null, fallback = 0): number {
@@ -468,7 +459,7 @@ export async function createEmployee(formData: FormData) {
   const user = await getSessionUser();
   requirePeopleAdmin(user);
   const tenantId = tenantIdFor(user);
-  await adminDb.execute(sql`
+  await execute(sql`
     insert into public.hr_employees (
       tenant_id, employee_code, full_name, email, phone, nationality, department_id, designation_id,
       manager_employee_id, hire_date, employment_status, base_salary, housing_allowance, transport_allowance,
@@ -492,7 +483,7 @@ export async function updateEmployee(formData: FormData) {
   const user = await getSessionUser();
   requirePeopleAdmin(user);
   const tenantId = tenantIdFor(user);
-  await adminDb.execute(sql`
+  await execute(sql`
     update public.hr_employees
     set full_name = ${toText(formData.get("fullName"))}, email = ${toText(formData.get("email"))},
       phone = ${toNullableText(formData.get("phone"))}, department_id = ${toNullableUuid(formData.get("departmentId"))}::uuid,
@@ -517,8 +508,8 @@ export async function deleteEmployee(formData: FormData) {
   requirePeopleAdmin(user);
   const tenantId = tenantIdFor(user);
   const id = toText(formData.get("id"));
-  await adminDb.execute(sql`update public.users set employee_id = null where employee_id = ${id}::uuid`);
-  await adminDb.execute(sql`delete from public.hr_employees where tenant_id = ${tenantId} and id = ${id}::uuid`);
+  await execute(sql`update public.users set employee_id = null where employee_id = ${id}::uuid`);
+  await execute(sql`delete from public.hr_employees where tenant_id = ${tenantId} and id = ${id}::uuid`);
   revalidatePath("/employees");
   revalidatePath("/");
 }
@@ -552,7 +543,7 @@ export async function updateEmployeeAccessRole(formData: FormData) {
   `);
   if (!employee) throw new Error("Employee not found.");
 
-  await adminDb.execute(sql`
+  await execute(sql`
     update public.users
     set role = ${nextRole}, updated_at = now()
     where tenant_id = ${tenantId}
@@ -560,7 +551,7 @@ export async function updateEmployeeAccessRole(formData: FormData) {
       and (${nextRole} = 'super_admin' or role <> 'super_admin')
   `);
 
-  await adminDb.execute(sql`
+  await execute(sql`
     insert into public.users (
       tenant_id, email, password_hash, name, role, employee_id, preferred_language,
       email_verified, created_at, updated_at
@@ -594,7 +585,7 @@ export async function createDepartment(formData: FormData) {
   const user = await getSessionUser();
   requirePeopleAdmin(user);
   const tenantId = tenantIdFor(user);
-  await adminDb.execute(sql`
+  await execute(sql`
     insert into public.hr_departments (tenant_id, name, name_ar, code, manager_employee_id, cost_center, location_city)
     values (${tenantId}, ${toText(formData.get("name"))}, ${toNullableText(formData.get("nameAr"))},
       ${toText(formData.get("code")).toUpperCase()}, ${toNullableUuid(formData.get("managerEmployeeId"))}::uuid,
@@ -608,7 +599,7 @@ export async function updateDepartment(formData: FormData) {
   const user = await getSessionUser();
   requirePeopleAdmin(user);
   const tenantId = tenantIdFor(user);
-  await adminDb.execute(sql`
+  await execute(sql`
     update public.hr_departments
     set name = ${toText(formData.get("name"))}, name_ar = ${toNullableText(formData.get("nameAr"))},
       code = ${toText(formData.get("code")).toUpperCase()}, manager_employee_id = ${toNullableUuid(formData.get("managerEmployeeId"))}::uuid,
@@ -624,7 +615,7 @@ export async function deleteDepartment(formData: FormData) {
   const user = await getSessionUser();
   requirePeopleAdmin(user);
   const tenantId = tenantIdFor(user);
-  await adminDb.execute(sql`delete from public.hr_departments where tenant_id = ${tenantId} and id = ${toText(formData.get("id"))}::uuid`);
+  await execute(sql`delete from public.hr_departments where tenant_id = ${tenantId} and id = ${toText(formData.get("id"))}::uuid`);
   revalidatePath("/departments");
 }
 
@@ -633,7 +624,7 @@ export async function createDesignation(formData: FormData) {
   const user = await getSessionUser();
   requirePeopleAdmin(user);
   const tenantId = tenantIdFor(user);
-  await adminDb.execute(sql`
+  await execute(sql`
     insert into public.hr_designations (tenant_id, department_id, title, title_ar, grade, min_salary, max_salary, is_managerial)
     values (${tenantId}, ${toNullableUuid(formData.get("departmentId"))}::uuid, ${toText(formData.get("title"))},
       ${toNullableText(formData.get("titleAr"))}, ${toNullableText(formData.get("grade"))},
@@ -647,7 +638,7 @@ export async function updateDesignation(formData: FormData) {
   const user = await getSessionUser();
   requirePeopleAdmin(user);
   const tenantId = tenantIdFor(user);
-  await adminDb.execute(sql`
+  await execute(sql`
     update public.hr_designations
     set department_id = ${toNullableUuid(formData.get("departmentId"))}::uuid, title = ${toText(formData.get("title"))},
       title_ar = ${toNullableText(formData.get("titleAr"))}, grade = ${toNullableText(formData.get("grade"))},
@@ -664,7 +655,7 @@ export async function deleteDesignation(formData: FormData) {
   const user = await getSessionUser();
   requirePeopleAdmin(user);
   const tenantId = tenantIdFor(user);
-  await adminDb.execute(sql`delete from public.hr_designations where tenant_id = ${tenantId} and id = ${toText(formData.get("id"))}::uuid`);
+  await execute(sql`delete from public.hr_designations where tenant_id = ${tenantId} and id = ${toText(formData.get("id"))}::uuid`);
   revalidatePath("/designations");
 }
 
@@ -696,7 +687,7 @@ export async function punchAttendance(formData: FormData) {
   if (!employee) throw new Error("Employee is not active or does not belong to this company.");
 
   if (mode === "out") {
-    await adminDb.execute(sql`
+    await execute(sql`
       insert into public.hr_attendance (
         tenant_id, employee_id, work_date, punch_out_at, punch_out_latitude,
         punch_out_longitude, punch_out_location, status, notes
@@ -714,7 +705,7 @@ export async function punchAttendance(formData: FormData) {
         updated_at = now()
     `);
   } else {
-    await adminDb.execute(sql`
+    await execute(sql`
       insert into public.hr_attendance (
         tenant_id, employee_id, work_date, punch_in_at, punch_in_latitude,
         punch_in_longitude, punch_in_location, status, notes
@@ -752,7 +743,7 @@ export async function createLeaveRequest(formData: FormData) {
   const user = await getSessionUser();
   const tenantId = tenantIdFor(user);
   const employeeId = toText(formData.get("employeeId"), user.employeeId ?? "");
-  await adminDb.execute(sql`
+  await execute(sql`
     insert into public.hr_leave_requests (tenant_id, employee_id, leave_type_id, start_date, end_date, days, reason)
     values (${tenantId}, ${employeeId}::uuid, ${toNullableUuid(formData.get("leaveTypeId"))}::uuid,
       ${toText(formData.get("startDate"))}::date, ${toText(formData.get("endDate"))}::date,
@@ -767,7 +758,7 @@ export async function decideLeave(formData: FormData) {
   const user = await getSessionUser();
   requireHr(user);
   const tenantId = tenantIdFor(user);
-  await adminDb.execute(sql`
+  await execute(sql`
     update public.hr_leave_requests
     set status = ${toText(formData.get("status"))}, approved_by_employee_id = ${user.employeeId || null}::uuid,
       approved_at = now(), manager_comment = ${toNullableText(formData.get("managerComment"))}, updated_at = now()
@@ -781,7 +772,7 @@ export async function createExpense(formData: FormData) {
   const user = await getSessionUser();
   const tenantId = tenantIdFor(user);
   const employeeId = toText(formData.get("employeeId"), user.employeeId ?? "");
-  await adminDb.execute(sql`
+  await execute(sql`
     insert into public.hr_expenses (tenant_id, employee_id, expense_date, category, amount, description)
     values (${tenantId}, ${employeeId}::uuid, ${toText(formData.get("expenseDate"))}::date,
       ${toText(formData.get("category"), "other")}, ${toNumber(formData.get("amount"))}, ${toNullableText(formData.get("description"))})
@@ -795,7 +786,7 @@ export async function decideExpense(formData: FormData) {
   const user = await getSessionUser();
   requireHr(user);
   const tenantId = tenantIdFor(user);
-  await adminDb.execute(sql`
+  await execute(sql`
     update public.hr_expenses
     set status = ${toText(formData.get("status"))}, approved_by_employee_id = ${user.employeeId || null}::uuid,
       approved_at = now(), manager_comment = ${toNullableText(formData.get("managerComment"))}, updated_at = now()
@@ -811,15 +802,59 @@ export async function updatePayrollStatus(formData: FormData) {
   const tenantId = tenantIdFor(user);
   const status = toText(formData.get("status"), "review");
   const periodId = toText(formData.get("id"));
-  await adminDb.execute(sql`
+  await execute(sql`
+    update public.hr_payroll_items i
+    set
+      gross_pay = i.basic_salary + i.housing_allowance + i.transport_allowance,
+      employee_gosi = case
+        when e.nationality ~* 'saudi|ksa' then round((least(45000, greatest(0, i.basic_salary + i.housing_allowance)) * 0.0975)::numeric, 2)
+        else 0
+      end,
+      employer_gosi = round((
+        case
+          when e.nationality ~* 'saudi|ksa' then least(45000, greatest(0, i.basic_salary + i.housing_allowance)) * 0.0975
+          else 0
+        end
+        + least(45000, greatest(0, i.basic_salary + i.housing_allowance)) * 0.02
+      )::numeric, 2),
+      eosb_accrual = round((i.basic_salary / 24)::numeric, 2),
+      net_pay = round((
+        i.basic_salary + i.housing_allowance + i.transport_allowance
+        - case
+          when e.nationality ~* 'saudi|ksa' then least(45000, greatest(0, i.basic_salary + i.housing_allowance)) * 0.0975
+          else 0
+        end
+      )::numeric, 2)
+    from public.hr_employees e
+    where i.tenant_id = ${tenantId}
+      and i.payroll_period_id = ${periodId}::uuid
+      and e.id = i.employee_id
+  `);
+  await execute(sql`
     update public.hr_payroll_periods
-    set status = ${status}, approved_by_employee_id = ${user.employeeId || null}::uuid,
+    set status = ${status},
+      gross_pay = coalesce(totals.gross_pay, 0),
+      employee_gosi = coalesce(totals.employee_gosi, 0),
+      employer_gosi = coalesce(totals.employer_gosi, 0),
+      net_pay = coalesce(totals.net_pay, 0),
+      approved_by_employee_id = ${user.employeeId || null}::uuid,
       approved_at = case when ${status} in ('approved','wps_exported','paid','locked') then now() else approved_at end,
       updated_at = now()
+    from (
+      select payroll_period_id,
+        sum(gross_pay) as gross_pay,
+        sum(employee_gosi) as employee_gosi,
+        sum(employer_gosi) as employer_gosi,
+        sum(net_pay) as net_pay
+      from public.hr_payroll_items
+      where tenant_id = ${tenantId} and payroll_period_id = ${periodId}::uuid
+      group by payroll_period_id
+    ) totals
     where tenant_id = ${tenantId} and id = ${periodId}::uuid
+      and totals.payroll_period_id = public.hr_payroll_periods.id
   `);
   if (status === "wps_exported" || status === "paid") {
-    await adminDb.execute(sql`
+    await execute(sql`
       update public.hr_payroll_items
       set wps_status = ${status === "paid" ? "paid" : "exported"}
       where tenant_id = ${tenantId} and payroll_period_id = ${periodId}::uuid
@@ -833,7 +868,7 @@ export async function updateComplianceStatus(formData: FormData) {
   const user = await getSessionUser();
   requireHr(user);
   const tenantId = tenantIdFor(user);
-  await adminDb.execute(sql`
+  await execute(sql`
     update public.hr_compliance_items
     set status = ${toText(formData.get("status"))}, notes = ${toNullableText(formData.get("notes"))}, updated_at = now()
     where tenant_id = ${tenantId} and id = ${toText(formData.get("id"))}::uuid

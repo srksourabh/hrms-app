@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./direct-sql": "./src/direct-sql.ts",
     "./health": "./src/health.ts",
     "./schema": "./src/schema/index.ts",
     "./schema/*": "./src/schema/*.ts",
