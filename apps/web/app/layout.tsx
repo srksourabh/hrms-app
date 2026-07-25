@@ -34,12 +34,12 @@ export const metadata: Metadata = {
   applicationName: productBrand.name,
   icons: {
     icon: "/favicon.svg",
-    apple: "/brand/taazur-mark.svg",
+    apple: "/brand/saudi-hrms-mark.svg",
   },
   openGraph: {
     title: `${productBrand.name} - ${productBrand.nameAr}`,
     description: productBrand.tagline,
-    images: ["/brand/taazur-lockup.svg"],
+    images: ["/brand/saudi-hrms-lockup.svg"],
   },
 };
 

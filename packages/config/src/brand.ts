@@ -8,19 +8,19 @@ export interface BrandConfig {
   accent: string;
 }
 
-export const taazurBrand: BrandConfig = {
+export const defaultBrand: BrandConfig = {
   name: "Saudi HRMS Portal",
   nameAr: "بوابة الموارد البشرية السعودية",
   attribution: "Saudi Arabian company HRMS",
   tagline: "Field-ready HR, payroll, and compliance for Saudi Arabia",
   taglineAr: "إدارة الموارد البشرية والرواتب والامتثال في السعودية",
-  logoUrl: "/brand/taazur-mark.svg",
+  logoUrl: "/brand/saudi-hrms-mark.svg",
   accent: "#0B5D46",
 };
 
 export function resolveBrand(overrides: Partial<BrandConfig> = {}): BrandConfig {
   return {
-    ...taazurBrand,
+    ...defaultBrand,
     ...Object.fromEntries(
       Object.entries(overrides).filter(([, value]) => value !== undefined && value !== ""),
     ),

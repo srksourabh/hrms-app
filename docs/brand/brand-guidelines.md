@@ -23,8 +23,8 @@ Avoid:
 
 | Asset | Location | Use |
 |---|---|---|
-| Primary mark | `apps/web/public/brand/taazur-mark.svg` | Product shell, login, app icon |
-| Bilingual lockup | `apps/web/public/brand/taazur-lockup.svg` | Reports, presentations, customer documents |
+| Primary mark | `apps/web/public/brand/saudi-hrms-mark.svg` | Product shell, login, app icon |
+| Bilingual lockup | `apps/web/public/brand/saudi-hrms-lockup.svg` | Reports, presentations, customer documents |
 | Next app icon | `apps/web/app/icon.svg` | Framework icon metadata |
 | Favicon | `apps/web/public/favicon.svg` | Browser tab and bookmarks |
 | React lockup | `apps/web/components/brand/brand-lockup.tsx` | Product UI and tenant overrides |

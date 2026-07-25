@@ -206,7 +206,7 @@ export function LoginForm() {
       <div className="px-6 pb-6 pt-2 text-center text-xs text-slate-500">
         Need help?{" "}
         <a
-          href="mailto:support@taazur.example"
+          href="mailto:support@saudi-hrms.example"
           className="font-semibold text-[hsl(var(--saudi-green))] hover:underline"
         >
           Contact support
